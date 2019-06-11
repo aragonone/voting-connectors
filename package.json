@@ -1,0 +1,27 @@
+{
+  "name": "@aragon/kits-token-wrapper",
+  "version": "0.0.1",
+  "description": "Aragon app token wrapper",
+  "author": "Aragon Association <legal@aragon.org>",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "lint": "solium --dir ./contracts",
+    "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
+    "ganache-cli:test": "./node_modules/@aragon/test-helpers/ganache-cli.sh"
+  },
+  "devDependencies": {
+    "@aragon/apps-shared-minime": "1.0.0",
+    "@aragon/apps-shared-migrations": "1.0.0",
+    "@aragon/apps-agent": "1.0.1",
+    "@aragon/apps-finance": "2.1.0",
+    "@aragon/apps-token-manager": "2.0.0",
+    "@aragon/apps-vault": "4.0.0",
+    "@aragon/apps-voting": "2.0.0",
+    "@aragon/kits-base": "1.0.0",
+    "@aragon/os": "4.0.1",
+    "@aragon/test-helpers": "^1.0.0",
+    "ganache-cli": "^6.0.3",
+    "solium": "^1.0.4",
+    "truffle": "4.1.14"
+  }
+}
