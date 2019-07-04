@@ -1,5 +1,5 @@
 {
-  "name": "@aragon/kits-token-wrapper",
+  "name": "@aragon/token-wrapper",
   "version": "0.0.1",
   "description": "Aragon app token wrapper",
   "author": "Aragon Association <legal@aragon.org>",
