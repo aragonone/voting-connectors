@@ -29,8 +29,8 @@
       "registry": "0xfe03625ea880a8cba336f9b5ad6e15b0a3b5a939",
       "wsRPC": "wss://rinkeby.eth.aragon.network/ws"
     },
-    "rinkeby-hatch": {
-      "appName": "token-wrapper.hatch.aragonpm.eth",
+    "rinkeby-open": {
+      "appName": "token-wrapper.open.aragonpm.eth",
       "network": "rinkeby",
       "registry": "0x98Df287B6C145399Aaa709692c8D308357bC085D",
       "wsRPC": "wss://rinkeby.eth.aragon.network/ws"
