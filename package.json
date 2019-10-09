@@ -5,11 +5,19 @@
   "author": "Aragon Association <legal@aragon.org>",
   "license": "GPL-3.0-or-later",
   "scripts": {
+    "prepare": "cd app && npm install && cd ..",
+    "compile": "aragon contracts compile",
+    "build": "cd app && npm run build && cd ..",
     "lint": "solium --dir ./contracts",
     "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
+    "start": "npm run start:ipfs",
+    "start:app": "cd app && npm start && cd ..",
+    "start:ipfs": "./scripts/run.sh ipfs",
+    "start:http": "./scripts/run.sh http",
     "ganache-cli:test": "./node_modules/@aragon/test-helpers/ganache-cli.sh"
   },
   "devDependencies": {
+    "@aragon/cli": "^6.0.0",
     "@aragon/apps-shared-minime": "1.0.0",
     "@aragon/apps-shared-migrations": "1.0.0",
     "@aragon/apps-agent": "1.0.1",
