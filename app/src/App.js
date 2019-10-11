@@ -2,32 +2,50 @@ import React from 'react'
 import { useAragonApi } from '@aragon/api-react'
 import { Main, Button } from '@aragon/ui'
 import styled from 'styled-components'
+import BN from 'bn.js'
 
 function App() {
   const { api, appState } = useAragonApi()
   const {
     token,
     erc20,
+    tokenBalance,
+    erc20Balance,
     isSyncing
   } = appState
 
-  console.log(`state:`, JSON.stringify(appState, null, 2) )
+  const numTokens = 1
+  const amount = (new BN(`${numTokens}`).mul(new BN('10').pow(new BN('18')))).toString()
+  console.log(`amount`, amount)
+
+  const intentParams = {
+    token: { address: erc20, value: amount },
+    gas: 500000
+  }
+  console.log(`params`, intentParams)
 
   return (
     <Main>
       <BaseLayout>
         {isSyncing && <Syncing />}
         <Buttons>
-          <Button mode="secondary" onClick={() => api.lock(1).toPromise()}>
+          <Button mode="secondary" onClick={
+            async () => {
+              console.log(`amount`, amount)
+              await api.lock(amount, intentParams).toPromise()
+            }
+          }>
             Lock tokens
           </Button>
-          <Button mode="secondary" onClick={() => api.unlock(1).toPromise()}>
+          <Button mode="secondary" onClick={
+            async () => await api.unlock(amount).toPromise()
+          }>
             Unlock tokens
           </Button>
         </Buttons>
         <div>
-          <Count>Org token: {token}</Count>
-          <Count>ERC20: {erc20}</Count>
+          <Count>Org token: {token} balance: {tokenBalance}</Count>
+          <Count>Wrapped token: {erc20} balance: {erc20Balance}</Count>
         </div>
       </BaseLayout>
     </Main>

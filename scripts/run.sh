@@ -6,7 +6,6 @@ echo \< RUNNING APP IN MODE: \"$MODE\" \>
 
 # Exit script as soon as a command fails.
 set -o errexit
-set -x
 
 # Executes cleanup function at script exit.
 trap cleanup EXIT
@@ -34,13 +33,12 @@ deployTokens() {
 
 runUsingIPFS() {
   echo Running org in ipfs...
-  # TODO
-  npx aragon run --debug --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN}
+  npx aragon run --debug --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 runUsingHTTP() {
   echo Running org in http...
-  npx aragon run --debug --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN}
+  npx aragon run --debug --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 startDevchain
