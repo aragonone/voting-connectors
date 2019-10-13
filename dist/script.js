@@ -28382,7 +28382,7 @@ function () {
   var _ref = _asyncToGenerator(
   /*#__PURE__*/
   regeneratorRuntime.mark(function _callee() {
-    var token, erc20;
+    var token, erc20, tokenBalance, erc20Balance;
     return regeneratorRuntime.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -28397,15 +28397,16 @@ function () {
 
           case 5:
             erc20 = _context.sent;
+            tokenBalance = 0;
+            erc20Balance = 0;
             return _context.abrupt("return", {
               token: token,
               erc20: erc20,
-              erc20Balance: 0,
-              tokenBalance: 0,
-              saraza: "saraza"
+              erc20Balance: erc20Balance,
+              tokenBalance: tokenBalance
             });
 
-          case 7:
+          case 9:
           case "end":
             return _context.stop();
         }
@@ -28421,46 +28422,105 @@ function () {
 var reducer =
 /*#__PURE__*/
 function () {
-  var _ref3 = _asyncToGenerator(
+  var _ref2 = _asyncToGenerator(
   /*#__PURE__*/
-  regeneratorRuntime.mark(function _callee2(state, _ref2) {
-    var event, nextState;
+  regeneratorRuntime.mark(function _callee2(state, data) {
+    var event, returnValues, nextState, _nextState, token, erc20, account, newAccount;
+
     return regeneratorRuntime.wrap(function _callee2$(_context2) {
       while (1) {
         switch (_context2.prev = _context2.next) {
           case 0:
-            event = _ref2.event;
-            nextState = _objectSpread({}, state); // const tokenBalance = await getTokenBalance(token)
-            // const erc20Balance = await getERC20Balance(erc20)
+            event = data.event, returnValues = data.returnValues; // console.log(`data`, data)
 
+            nextState = _objectSpread({}, state);
+            _nextState = nextState, token = _nextState.token, erc20 = _nextState.erc20, account = _nextState.account;
             _context2.t0 = event;
-            _context2.next = _context2.t0 === 'TokensLocked' ? 5 : _context2.t0 === 'TokensUnlocked' ? 7 : _context2.t0 === _api.events.SYNC_STATUS_SYNCING ? 9 : _context2.t0 === _api.events.SYNC_STATUS_SYNCED ? 11 : 13;
+            _context2.next = _context2.t0 === 'TokensLocked' ? 6 : _context2.t0 === 'TokensUnlocked' ? 18 : _context2.t0 === _api.events.ACCOUNTS_TRIGGER ? 30 : _context2.t0 === _api.events.SYNC_STATUS_SYNCING ? 44 : _context2.t0 === _api.events.SYNC_STATUS_SYNCED ? 46 : 48;
             break;
 
-          case 5:
-            nextState = _objectSpread({}, nextState);
-            return _context2.abrupt("break", 13);
+          case 6:
+            _context2.t1 = _objectSpread;
+            _context2.t2 = {};
+            _context2.t3 = nextState;
+            _context2.next = 11;
+            return getTokenBalance(token, account);
 
-          case 7:
-            nextState = _objectSpread({}, nextState);
-            return _context2.abrupt("break", 13);
+          case 11:
+            _context2.t4 = _context2.sent;
+            _context2.next = 14;
+            return getTokenBalance(erc20, account);
 
-          case 9:
+          case 14:
+            _context2.t5 = _context2.sent;
+            _context2.t6 = {
+              tokenBalance: _context2.t4,
+              erc20Balance: _context2.t5
+            };
+            nextState = (0, _context2.t1)(_context2.t2, _context2.t3, _context2.t6);
+            return _context2.abrupt("break", 48);
+
+          case 18:
+            _context2.t7 = _objectSpread;
+            _context2.t8 = {};
+            _context2.t9 = nextState;
+            _context2.next = 23;
+            return getTokenBalance(token, account);
+
+          case 23:
+            _context2.t10 = _context2.sent;
+            _context2.next = 26;
+            return getTokenBalance(erc20, account);
+
+          case 26:
+            _context2.t11 = _context2.sent;
+            _context2.t12 = {
+              tokenBalance: _context2.t10,
+              erc20Balance: _context2.t11
+            };
+            nextState = (0, _context2.t7)(_context2.t8, _context2.t9, _context2.t12);
+            return _context2.abrupt("break", 48);
+
+          case 30:
+            newAccount = returnValues.account;
+            _context2.t13 = _objectSpread;
+            _context2.t14 = {};
+            _context2.t15 = nextState;
+            _context2.t16 = newAccount;
+            _context2.next = 37;
+            return getTokenBalance(token, newAccount);
+
+          case 37:
+            _context2.t17 = _context2.sent;
+            _context2.next = 40;
+            return getTokenBalance(erc20, newAccount);
+
+          case 40:
+            _context2.t18 = _context2.sent;
+            _context2.t19 = {
+              account: _context2.t16,
+              tokenBalance: _context2.t17,
+              erc20Balance: _context2.t18
+            };
+            nextState = (0, _context2.t13)(_context2.t14, _context2.t15, _context2.t19);
+            return _context2.abrupt("break", 48);
+
+          case 44:
             nextState = _objectSpread({}, nextState, {
               isSyncing: true
             });
-            return _context2.abrupt("break", 13);
+            return _context2.abrupt("break", 48);
 
-          case 11:
+          case 46:
             nextState = _objectSpread({}, nextState, {
               isSyncing: false
             });
-            return _context2.abrupt("break", 13);
+            return _context2.abrupt("break", 48);
 
-          case 13:
+          case 48:
             return _context2.abrupt("return", nextState);
 
-          case 14:
+          case 49:
           case "end":
             return _context2.stop();
         }
@@ -28469,7 +28529,7 @@ function () {
   }));
 
   return function reducer(_x, _x2) {
-    return _ref3.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
@@ -28533,24 +28593,30 @@ function _getERC() {
   return _getERC.apply(this, arguments);
 }
 
-function getTokenBalance(_x3) {
+function getTokenBalance(_x3, _x4) {
   return _getTokenBalance.apply(this, arguments);
 }
 
 function _getTokenBalance() {
   _getTokenBalance = _asyncToGenerator(
   /*#__PURE__*/
-  regeneratorRuntime.mark(function _callee5(token) {
-    var tokenContract;
+  regeneratorRuntime.mark(function _callee5(token, account) {
+    var tokenContract, balance;
     return regeneratorRuntime.wrap(function _callee5$(_context5) {
       while (1) {
         switch (_context5.prev = _context5.next) {
           case 0:
-            tokenContract = api.external(token, TokenAbi);
-            _context5.next = 3;
-            return tokenContract.balanceOf(tokenContract).toPromise();
+            console.log("READING BALANCES 123...");
+            console.log("account", account);
+            tokenContract = app.external(token, TokenAbi);
+            _context5.next = 5;
+            return tokenContract.balanceOf(account).toPromise();
 
-          case 3:
+          case 5:
+            balance = _context5.sent;
+            return _context5.abrupt("return", balance);
+
+          case 7:
           case "end":
             return _context5.stop();
         }
@@ -28558,33 +28624,6 @@ function _getTokenBalance() {
     }, _callee5);
   }));
   return _getTokenBalance.apply(this, arguments);
-}
-
-function getERC20Balance(_x4) {
-  return _getERC20Balance.apply(this, arguments);
-}
-
-function _getERC20Balance() {
-  _getERC20Balance = _asyncToGenerator(
-  /*#__PURE__*/
-  regeneratorRuntime.mark(function _callee6(erc20) {
-    var erc20Contract;
-    return regeneratorRuntime.wrap(function _callee6$(_context6) {
-      while (1) {
-        switch (_context6.prev = _context6.next) {
-          case 0:
-            erc20Contract = api.external(erc20, TokenAbi);
-            _context6.next = 3;
-            return erc20Contract.balanceOf(erc20Contract).toPromise();
-
-          case 3:
-          case "end":
-            return _context6.stop();
-        }
-      }
-    }, _callee6);
-  }));
-  return _getERC20Balance.apply(this, arguments);
 }
 },{"core-js/stable":"XqIO","regenerator-runtime/runtime":"QVnC","@aragon/api":"mnVE","./abi/minimeToken.json":"vkiE"}]},{},["mpVp"], null)
 //# sourceMappingURL=/script.js.map

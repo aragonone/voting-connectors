@@ -18,12 +18,6 @@ function App() {
   const amount = (new BN(`${numTokens}`).mul(new BN('10').pow(new BN('18')))).toString()
   console.log(`amount`, amount)
 
-  const intentParams = {
-    token: { address: erc20, value: amount },
-    gas: 500000
-  }
-  console.log(`params`, intentParams)
-
   return (
     <Main>
       <BaseLayout>
@@ -31,6 +25,16 @@ function App() {
         <Buttons>
           <Button mode="secondary" onClick={
             async () => {
+
+              const app = (await api.currentApp().toPromise()).appAddress
+              // console.log(`app`, app)
+
+              const intentParams = {
+                token: { address: erc20, value: amount, spender: app },
+                gas: 500000
+              }
+              console.log(`params`, intentParams)
+
               console.log(`amount`, amount)
               await api.lock(amount, intentParams).toPromise()
             }

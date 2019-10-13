@@ -9,8 +9,8 @@ const app = new Aragon()
 const initialState = async () => {
   const token = await getToken()
   const erc20 = await getERC20()
-  const tokenBalance = await getTokenBalance(token)
-  const erc20Balance = await getERC20Balance(erc20)
+  const tokenBalance = 0
+  const erc20Balance = 0
 
   return {
     token,
@@ -20,25 +20,38 @@ const initialState = async () => {
   }
 }
 
-const reducer = async (state, { event }) => {
-  let nextState = { ...state }
+const reducer = async (state, data) => {
+  const {
+    event,
+    returnValues
+  } = data
+  // console.log(`data`, data)
 
-  // const tokenBalance = await getTokenBalance(token)
-  // const erc20Balance = await getERC20Balance(erc20)
+  let nextState = { ...state }
+  const { token, erc20, account } = nextState
 
   switch (event) {
     case 'TokensLocked':
       nextState = {
         ...nextState,
-        // erc20Balance,
-        // tokenBalance
+        tokenBalance: await getTokenBalance(token, account),
+        erc20Balance: await getTokenBalance(erc20, account)
       }
       break
     case 'TokensUnlocked':
       nextState = {
         ...nextState,
-        // erc20Balance,
-        // tokenBalance
+        tokenBalance: await getTokenBalance(token, account),
+        erc20Balance: await getTokenBalance(erc20, account)
+      }
+      break
+    case events.ACCOUNTS_TRIGGER:
+      const newAccount = returnValues.account
+      nextState = {
+        ...nextState,
+        account: newAccount,
+        tokenBalance: await getTokenBalance(token, newAccount),
+        erc20Balance: await getTokenBalance(erc20, newAccount)
       }
       break
     case events.SYNC_STATUS_SYNCING:
@@ -62,12 +75,10 @@ async function getERC20() {
   return await app.call('erc20').toPromise()
 }
 
-async function getTokenBalance(token) {
-  const tokenContract = api.external(token, TokenAbi)
-  await tokenContract.balanceOf(tokenContract).toPromise()
-}
-
-async function getERC20Balance(erc20) {
-  const erc20Contract = api.external(erc20, TokenAbi)
-  await erc20Contract.balanceOf(erc20Contract).toPromise()
+async function getTokenBalance(token, account) {
+  console.log(`READING BALANCES 123...`)
+  console.log(`account`, account)
+  const tokenContract = app.external(token, TokenAbi)
+  const balance = await tokenContract.balanceOf(account).toPromise()
+  return balance
 }

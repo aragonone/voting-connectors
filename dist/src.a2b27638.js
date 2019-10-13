@@ -80240,14 +80240,6 @@ function App() {
   var numTokens = 1;
   var amount = new _bn.default("".concat(numTokens)).mul(new _bn.default('10').pow(new _bn.default('18'))).toString();
   console.log("amount", amount);
-  var intentParams = {
-    token: {
-      address: erc20,
-      value: amount
-    },
-    gas: 500000
-  };
-  console.log("params", intentParams);
   return _react.default.createElement(_ui.Main, null, _react.default.createElement(BaseLayout, null, isSyncing && _react.default.createElement(Syncing, null), _react.default.createElement(Buttons, null, _react.default.createElement(_ui.Button, {
     mode: "secondary",
     onClick:
@@ -80255,15 +80247,31 @@ function App() {
     _asyncToGenerator(
     /*#__PURE__*/
     regeneratorRuntime.mark(function _callee() {
+      var app, intentParams;
       return regeneratorRuntime.wrap(function _callee$(_context) {
         while (1) {
           switch (_context.prev = _context.next) {
             case 0:
+              _context.next = 2;
+              return api.currentApp().toPromise();
+
+            case 2:
+              app = _context.sent.appAddress;
+              // console.log(`app`, app)
+              intentParams = {
+                token: {
+                  address: erc20,
+                  value: amount,
+                  spender: app
+                },
+                gas: 500000
+              };
+              console.log("params", intentParams);
               console.log("amount", amount);
-              _context.next = 3;
+              _context.next = 8;
               return api.lock(amount, intentParams).toPromise();
 
-            case 3:
+            case 8:
             case "end":
               return _context.stop();
           }
@@ -80375,7 +80383,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "40131" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "39459" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
