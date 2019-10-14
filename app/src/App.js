@@ -31,13 +31,8 @@ function App() {
         <Buttons>
           <Button mode="secondary" onClick={
             async () => {
-
               const app = (await api.currentApp().toPromise()).appAddress
-
-              const intentParams = {
-                token: { address: erc20, value: amount, spender: app }
-              }
-
+              const intentParams = { token: { address: erc20, value: amount, spender: app } }
               await api.lock(amount, intentParams).toPromise()
             }
           }>

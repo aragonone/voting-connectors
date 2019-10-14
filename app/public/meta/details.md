@@ -1,6 +1,5 @@
-An application for Aragon.
+An application for Aragon that allows locking/unlocking any ERC20 token to mint/burn organization tokens.
 
 **Features**
-- Feature \#1.
-- Feature \#2.
-- Feature \#3.
+- Lock ERC20 tokens to mint organization tokens.
+- Burn organization tokens to unlock ERC20 tokens.

@@ -65,6 +65,6 @@ async function getERC20() {
 }
 
 async function getTokenBalance(token, account) {
-  const tokenContract = app.external(token, ERC20)
+  const tokenContract = app.external(token, ERC20.abi)
   return await tokenContract.balanceOf(account).toPromise()
 }
