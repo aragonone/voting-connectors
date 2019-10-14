@@ -4,6 +4,13 @@ import { Main, Button } from '@aragon/ui'
 import styled from 'styled-components'
 import BN from 'bn.js'
 
+function toBigNumber(value) {
+  /* outputs `value * 10^18` */
+  return (new BN(`${value}`)
+    .mul(new BN('10').pow(new BN('18'))))
+    .toString()
+}
+
 function App() {
   const { api, appState } = useAragonApi()
   const {
@@ -14,9 +21,8 @@ function App() {
     isSyncing
   } = appState
 
-  const numTokens = 1
-  const amount = (new BN(`${numTokens}`).mul(new BN('10').pow(new BN('18')))).toString()
-  console.log(`amount`, amount)
+  // TODO: Read this from an input component
+  const amount = toBigNumber(1)
 
   return (
     <Main>
@@ -27,15 +33,11 @@ function App() {
             async () => {
 
               const app = (await api.currentApp().toPromise()).appAddress
-              // console.log(`app`, app)
 
               const intentParams = {
-                token: { address: erc20, value: amount, spender: app },
-                gas: 500000
+                token: { address: erc20, value: amount, spender: app }
               }
-              console.log(`params`, intentParams)
 
-              console.log(`amount`, amount)
               await api.lock(amount, intentParams).toPromise()
             }
           }>

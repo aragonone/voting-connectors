@@ -3,7 +3,6 @@ import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
 
 const TokenAbi = require('./abi/minimeToken.json')
-
 const app = new Aragon()
 
 const initialState = async () => {
@@ -20,27 +19,21 @@ const initialState = async () => {
   }
 }
 
-const reducer = async (state, data) => {
-  const {
-    event,
-    returnValues
-  } = data
-  // console.log(`data`, data)
-
-  let nextState = { ...state }
-  const { token, erc20, account } = nextState
+const reducer = async (state, { event, returnValues }) => {
+  let nextState
+  const { token, erc20, account } = state
 
   switch (event) {
     case 'TokensLocked':
       nextState = {
-        ...nextState,
+        ...state,
         tokenBalance: await getTokenBalance(token, account),
         erc20Balance: await getTokenBalance(erc20, account)
       }
       break
     case 'TokensUnlocked':
       nextState = {
-        ...nextState,
+        ...state,
         tokenBalance: await getTokenBalance(token, account),
         erc20Balance: await getTokenBalance(erc20, account)
       }
@@ -48,17 +41,17 @@ const reducer = async (state, data) => {
     case events.ACCOUNTS_TRIGGER:
       const newAccount = returnValues.account
       nextState = {
-        ...nextState,
+        ...state,
         account: newAccount,
         tokenBalance: await getTokenBalance(token, newAccount),
         erc20Balance: await getTokenBalance(erc20, newAccount)
       }
       break
     case events.SYNC_STATUS_SYNCING:
-      nextState = { ...nextState, isSyncing: true }
+      nextState = { ...state, isSyncing: true }
       break
     case events.SYNC_STATUS_SYNCED:
-      nextState = { ...nextState, isSyncing: false }
+      nextState = { ...state, isSyncing: false }
       break
   }
 
@@ -76,9 +69,6 @@ async function getERC20() {
 }
 
 async function getTokenBalance(token, account) {
-  console.log(`READING BALANCES 123...`)
-  console.log(`account`, account)
   const tokenContract = app.external(token, TokenAbi)
-  const balance = await tokenContract.balanceOf(account).toPromise()
-  return balance
+  return await tokenContract.balanceOf(account).toPromise()
 }
