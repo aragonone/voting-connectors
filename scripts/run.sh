@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# 'ipfs' or 'http'
+# MODE is 'ipfs' or 'http'
 MODE=$1
-echo \< RUNNING APP IN MODE: \"$MODE\" \>
+echo RUNNING APP IN MODE: \"$MODE\"
 
 # Exit script as soon as a command fails.
 set -o errexit
@@ -31,25 +31,25 @@ deployTokens() {
   echo \ \ Wrapped token: ${WRAPPED_TOKEN}
 }
 
+run() {
+  echo Running org...
+  if [ $MODE == 'ipfs' ]
+  then runUsingIPFS
+  elif [ $MODE == 'http' ]
+  then runUsingHTTP
+  else
+    echo ERROR: Unrecognized mode \"$MODE\". Please use 'ipfs' or 'http'.
+  fi
+}
+
 runUsingIPFS() {
-  echo Running org in ipfs...
   npx aragon run --debug --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 runUsingHTTP() {
-  echo Running org in http...
   npx aragon run --debug --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 startDevchain
 deployTokens
-
-if [ $MODE == 'ipfs' ]
-then
-  runUsingIPFS
-elif [ $MODE == 'http' ]
-then
-  runUsingHTTP
-else
-  echo ERROR: Unrecognized mode \"$MODE\". Please use 'ipfs' or 'http'.
-fi
+run
