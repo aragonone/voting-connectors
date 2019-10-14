@@ -25,10 +25,10 @@ startDevchain() {
   echo \ \ Running devchain with pid ${pid}
 }
 
-deployTokens() {
-  echo Deploying token...
-  WRAPPED_TOKEN=$(npx truffle exec scripts/deployToken.js 'WrappedToken' 'DAI' --network rpc | tail -1)
-  echo \ \ Wrapped token: ${WRAPPED_TOKEN}
+deployToken() {
+  echo Deploying ERC20 token...
+  WRAPPED_TOKEN=$(npx truffle exec scripts/deployToken.js --network rpc | tail -1)
+  echo \ \ Wrapped ERC20 token: ${WRAPPED_TOKEN}
 }
 
 run() {
@@ -43,13 +43,13 @@ run() {
 }
 
 runUsingIPFS() {
-  npx aragon run --debug --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
+  npx aragon run --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 runUsingHTTP() {
-  npx aragon run --debug --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
+  npx aragon run --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 startDevchain
-deployTokens
+deployToken
 run
