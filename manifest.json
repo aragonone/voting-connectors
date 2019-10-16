@@ -1,9 +1,9 @@
 {
   "name": "Token Wrapper",
-  "author": "Aragon Association",
+  "author": "Aragon One",
   "description": "Locks/releases ERC20 tokens to mint/burn organization tokens",
   "details_url": "/meta/details.md",
-  "source_url": "https://<placeholder-repository-url>",
+  "source_url": "https://github.com/aragonone/token-wrapper",
   "icons": [
     {
       "src": "/meta/icon.svg",

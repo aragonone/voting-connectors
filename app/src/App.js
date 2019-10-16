@@ -4,13 +4,6 @@ import { Main, Button } from '@aragon/ui'
 import styled from 'styled-components'
 import BN from 'bn.js'
 
-function toBigNumber(value) {
-  /* outputs `value * 10^18` */
-  return (new BN(`${value}`)
-    .mul(new BN('10').pow(new BN('18'))))
-    .toString()
-}
-
 function App() {
   const { api, appState } = useAragonApi()
   const {
@@ -22,7 +15,7 @@ function App() {
   } = appState
 
   // TODO: Read this from an input component
-  const amount = toBigNumber(1)
+  const amount = '10000000'
 
   return (
     <Main>

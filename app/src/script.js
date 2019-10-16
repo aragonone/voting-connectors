@@ -2,7 +2,7 @@ import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
 
-const ERC20 = require('./abi/ERC20.json')
+const TokenBalanceOfABI = require('./abi/token-balanceOf.json')
 const app = new Aragon()
 
 const initialState = async () => {
@@ -57,14 +57,14 @@ const reducer = async (state, { event, returnValues }) => {
 app.store(reducer, { init: initialState })
 
 async function getToken() {
-  return await app.call('token').toPromise()
+  return app.call('token').toPromise()
 }
 
 async function getERC20() {
-  return await app.call('erc20').toPromise()
+  return app.call('erc20').toPromise()
 }
 
 async function getTokenBalance(token, account) {
-  const tokenContract = app.external(token, ERC20.abi)
-  return await tokenContract.balanceOf(account).toPromise()
+  const tokenContract = app.external(token, TokenBalanceOfABI)
+  return tokenContract.balanceOf(account).toPromise()
 }
