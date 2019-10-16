@@ -3,6 +3,7 @@ node_modules
 
 # build artifacts
 build
+dist
 
 # lock files
 package-lock.json
