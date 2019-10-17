@@ -21,26 +21,28 @@ function App() {
     <Main>
       <BaseLayout>
         {isSyncing && <Syncing />}
-        <Buttons>
-          <Button mode="secondary" onClick={
-            async () => {
-              const app = (await api.currentApp().toPromise()).appAddress
-              const intentParams = { token: { address: erc20, value: amount, spender: app } }
-              await api.lock(amount, intentParams).toPromise()
-            }
-          }>
-            Lock tokens
-          </Button>
-          <Button mode="secondary" onClick={
-            async () => await api.unlock(amount).toPromise()
-          }>
-            Unlock tokens
-          </Button>
-        </Buttons>
-        <div>
-          <Count>Org token: {token} balance: {tokenBalance}</Count>
-          <Count>Wrapped token: {erc20} balance: {erc20Balance}</Count>
-        </div>
+        { tokenBalance && tokenBalance > 0 ?
+            <div>
+              <p>You have {tokenBalance} org tokens </p>
+              <Button mode="secondary" onClick={async () => await api.unlock(amount).toPromise()}>
+                Unlock tokens
+              </Button>
+            </div>
+            :
+            <div>
+              <p>You dont have org tokens but you have {erc20Balance} of erc20 tokens to wrap</p>
+              <Button mode="secondary" onClick={
+                async () => {
+                  const app = (await api.currentApp().toPromise()).appAddress
+                  const intentParams = { token: { address: erc20, value: amount, spender: app } }
+                  await api.lock(amount, intentParams).toPromise()
+                }
+              }>
+                Lock tokens
+              </Button>
+            </div>
+        }
+
       </BaseLayout>
     </Main>
   )
