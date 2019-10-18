@@ -33,7 +33,6 @@ const updateHoldersArrayFromLockEvent = async (event, data, state) => {
     const accounts = holders.map(holder => holder.account)
     idx = accounts.indexOf(account)
   }
-  console.log(`idx`, idx)
 
   // Push the holder into the array.
   if (idx === -1) { // New holder
