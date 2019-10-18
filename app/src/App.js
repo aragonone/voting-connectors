@@ -20,6 +20,7 @@ function App() {
   const {
     token,
     erc20,
+    erc20Symbol,
     tokenBalance,
     erc20Balance,
     account,
@@ -32,6 +33,10 @@ function App() {
   const theme = useTheme();
   return (
     <Main>
+      <div>
+        <p>TODO: Put this somewhere nice :)</p>
+        <p>Wrapped token symbol: {erc20Symbol}</p>
+      </div>
       {isSyncing && <Syncing />}
       {tokenBalance && tokenBalance > 0 ? (
         <React.Fragment>
@@ -87,6 +92,7 @@ function App() {
     </Main>
   );
 }
+
 const Syncing = styled.div.attrs({ children: "Syncing…" })`
   position: absolute;
   top: 15px;

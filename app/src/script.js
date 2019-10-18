@@ -3,12 +3,19 @@ import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
 
 const TokenBalanceOfABI = require('./abi/token-balanceOf.json')
+const TokenSymbolABI = require('./abi/token-symbol.json')
+
 const app = new Aragon()
 
 const initialState = async () => {
+  const token = await getToken()
+  const erc20 = await getERC20()
+  const erc20Symbol = await getTokenSymbol(erc20)
+
   return {
-    token: await getToken(),
-    erc20: await getERC20(),
+    token,
+    erc20,
+    erc20Symbol,
     erc20Balance: 0,
     tokenBalance: 0,
     account: undefined
@@ -67,4 +74,9 @@ async function getERC20() {
 async function getTokenBalance(token, account) {
   const tokenContract = app.external(token, TokenBalanceOfABI)
   return tokenContract.balanceOf(account).toPromise()
+}
+
+async function getTokenSymbol(token) {
+  const tokenContract = app.external(token, TokenSymbolABI)
+  return tokenContract.symbol().toPromise()
 }
