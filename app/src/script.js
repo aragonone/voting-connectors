@@ -1,6 +1,7 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
+import BN from "bn.js";
 
 const TokenBalanceOfABI = require('./abi/token-balanceOf.json')
 const TokenSymbolABI = require('./abi/token-symbol.json')
@@ -16,39 +17,50 @@ const initialState = async () => {
     orgTokenAddress,
     wrappedTokenAddress,
     wrappedTokenSymbol,
-    wrappedTokenBalance: 0,
-    orgTokenBalance: 0,
-    activeAccount: undefined
+    holders: []
   }
+}
+
+const updateHoldersArrayFromLockEvent = async (event, data, state) => {
+  const { entity: account, amount } = data
+  const { holders } = state
+
+  // Identify holder idx from account address.
+  let idx
+  if (holders.length === 0) {
+    idx = -1
+  } else {
+    const accounts = holders.map(holder => holder.account)
+    idx = accounts.indexOf(account)
+  }
+  console.log(`idx`, idx)
+
+  // Push the holder into the array.
+  if (idx === -1) { // New holder
+    holders.push({ account, amount })
+  } else { // Update existing holder balance
+    const holder = holders[idx]
+    const currAmount = new BN(holder.amount)
+    const deltaAmount = new BN(amount)
+    if(event === 'TokensLocked') {
+      holder.amount = currAmount.add(deltaAmount).toString()
+    } else if(event === 'TokensUnlocked') {
+      holder.amount = currAmount.sub(deltaAmount).toString()
+    }
+    holders[idx] = holder
+  }
+
+  return { ...state, holders }
 }
 
 const reducer = async (state, { event, returnValues }) => {
   let nextState = { ...state }
-  const { orgTokenAddress, wrappedTokenAddress, activeAccount } = state
+  const { orgTokenAddress, wrappedTokenAddress } = state
 
   switch (event) {
     case 'TokensLocked':
-      nextState = {
-        ...state,
-        orgTokenBalance: await getTokenBalance(orgTokenAddress,activeAccount),
-        wrappedTokenBalance: await getTokenBalance(wrappedTokenAddress, activeAccount)
-      }
-      break
     case 'TokensUnlocked':
-      nextState = {
-        ...state,
-        orgTokenBalance: await getTokenBalance(orgTokenAddress, account),
-        wrappedTokenBalance: await getTokenBalance(wrappedTokenAddress, account)
-      }
-      break
-    case events.ACCOUNTS_TRIGGER:
-      const newAccount = returnValues.account
-      nextState = {
-        ...state,
-        activeAccount: newAccount,
-        orgTokenBalance: await getTokenBalance(orgTokenAddress, newAccount),
-        wrappedTokenBalance: await getTokenBalance(wrappedTokenAddress, newAccount)
-      }
+      nextState = await updateHoldersArrayFromLockEvent(event, returnValues, state)
       break
     case events.SYNC_STATUS_SYNCING:
       nextState = { ...state, isSyncing: true }
