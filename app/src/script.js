@@ -8,46 +8,46 @@ const TokenSymbolABI = require('./abi/token-symbol.json')
 const app = new Aragon()
 
 const initialState = async () => {
-  const token = await getToken()
-  const erc20 = await getERC20()
-  const erc20Symbol = await getTokenSymbol(erc20)
+  const orgTokenAddress = await getOrgTokenAddress()
+  const wrappedTokenAddress = await getWrappedTokenAddress()
+  const wrappedTokenSymbol = await getTokenSymbol(wrappedTokenAddress)
 
   return {
-    token,
-    erc20,
-    erc20Symbol,
-    erc20Balance: 0,
-    tokenBalance: 0,
-    account: undefined
+    orgTokenAddress,
+    wrappedTokenAddress,
+    wrappedTokenSymbol,
+    wrappedTokenBalance: 0,
+    orgTokenBalance: 0,
+    activeAccount: undefined
   }
 }
 
 const reducer = async (state, { event, returnValues }) => {
   let nextState = { ...state }
-  const { token, erc20, account } = state
+  const { orgTokenAddress, wrappedTokenAddress, activeAccount } = state
 
   switch (event) {
     case 'TokensLocked':
       nextState = {
         ...state,
-        tokenBalance: await getTokenBalance(token, account),
-        erc20Balance: await getTokenBalance(erc20, account)
+        orgTokenBalance: await getTokenBalance(orgTokenAddress,activeAccount),
+        wrappedTokenBalance: await getTokenBalance(wrappedTokenAddress, activeAccount)
       }
       break
     case 'TokensUnlocked':
       nextState = {
         ...state,
-        tokenBalance: await getTokenBalance(token, account),
-        erc20Balance: await getTokenBalance(erc20, account)
+        orgTokenBalance: await getTokenBalance(orgTokenAddress, account),
+        wrappedTokenBalance: await getTokenBalance(wrappedTokenAddress, account)
       }
       break
     case events.ACCOUNTS_TRIGGER:
       const newAccount = returnValues.account
       nextState = {
         ...state,
-        account: newAccount,
-        tokenBalance: await getTokenBalance(token, newAccount),
-        erc20Balance: await getTokenBalance(erc20, newAccount)
+        activeAccount: newAccount,
+        orgTokenBalance: await getTokenBalance(orgTokenAddress, newAccount),
+        wrappedTokenBalance: await getTokenBalance(wrappedTokenAddress, newAccount)
       }
       break
     case events.SYNC_STATUS_SYNCING:
@@ -63,20 +63,20 @@ const reducer = async (state, { event, returnValues }) => {
 
 app.store(reducer, { init: initialState })
 
-async function getToken() {
+async function getOrgTokenAddress() {
   return app.call('token').toPromise()
 }
 
-async function getERC20() {
+async function getWrappedTokenAddress() {
   return app.call('erc20').toPromise()
 }
 
-async function getTokenBalance(token, account) {
-  const tokenContract = app.external(token, TokenBalanceOfABI)
+async function getTokenBalance(tokenAddress, account) {
+  const tokenContract = app.external(tokenAddress, TokenBalanceOfABI)
   return tokenContract.balanceOf(account).toPromise()
 }
 
-async function getTokenSymbol(token) {
-  const tokenContract = app.external(token, TokenSymbolABI)
+async function getTokenSymbol(tokenAddress) {
+  const tokenContract = app.external(tokenAddress, TokenSymbolABI)
   return tokenContract.symbol().toPromise()
 }

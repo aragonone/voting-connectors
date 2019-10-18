@@ -18,12 +18,12 @@ import Holders from "./screens/Holders";
 function App() {
   const { api, appState } = useAragonApi();
   const {
-    token,
-    erc20,
-    erc20Symbol,
-    tokenBalance,
-    erc20Balance,
-    account,
+    orgTokenAddress,
+    wrappedTokenAddress,
+    wrappedTokenSymbol,
+    orgTokenBalance,
+    wrappedTokenBalance,
+    activeAccount,
     isSyncing
   } = appState;
 
@@ -35,10 +35,10 @@ function App() {
     <Main>
       <div>
         <p>TODO: Put this somewhere nice :)</p>
-        <p>Wrapped token symbol: {erc20Symbol}</p>
+        <p>Wrapped token symbol: {wrappedTokenSymbol}</p>
       </div>
       {isSyncing && <Syncing />}
-      {tokenBalance && tokenBalance > 0 ? (
+      {orgTokenBalance && orgTokenBalance > 0 ? (
         <React.Fragment>
           <Header
             primary={
@@ -69,7 +69,7 @@ function App() {
                 onClick={async () => {
                   const app = (await api.currentApp().toPromise()).appAddress;
                   const intentParams = {
-                    token: { address: erc20, value: amount, spender: app }
+                    token: { address: wrappedTokenAddress, value: amount, spender: app }
                   };
                   await api.lock(amount, intentParams).toPromise();
                 }}
@@ -77,7 +77,7 @@ function App() {
             }
           />
           <Holders holders={[
-            { account: useConnectedAccount(), balance: tokenBalance },
+            { account: useConnectedAccount(), balance: orgTokenBalance },
           ]} />
           <Button
             mode="secondary"

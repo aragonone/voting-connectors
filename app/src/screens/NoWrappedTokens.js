@@ -6,7 +6,7 @@ import styled from "styled-components";
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
   const { api, appState } = useAragonApi();
-  const { token, erc20, tokenBalance, erc20Balance } = appState;
+  const { orgTokenAddress, wrappedTokenAddress, orgTokenBalance, wrappedTokenBalance } = appState;
 
   // TODO: Read this from an input component
   const amount = "10000000";
@@ -39,12 +39,12 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
             onClick={async () => {
               const app = (await api.currentApp().toPromise()).appAddress;
               const intentParams = {
-                token: { address: erc20, value: amount, spender: app }
+                token: { address: wrappedTokenAddress, value: amount, spender: app }
               };
               await api.lock(amount, intentParams).toPromise();
             }}
           >
-            Wrap token
+            Wrap token (rename to 'Lock tokens?')
           </Button>
         }
         illustration={
