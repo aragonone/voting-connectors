@@ -27,8 +27,8 @@ function Holders({ holders, unwrapToken}) {
         <DataView
           fields={["Holder", "Wrapped tokens balance"]}
           entries={holders}
-          renderEntry={({ account, balance }) => {
-            return [<IdentityBadge entity={account} />, <div>{balance}</div>];
+          renderEntry={({ account, amount }) => {
+            return [<IdentityBadge entity={account} />, <div>{amount}</div>];
           }}
           renderEntryActions={() => <EntryActions unwrapToken={unwrapToken}/>}
         />
