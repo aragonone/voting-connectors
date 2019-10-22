@@ -1,23 +1,23 @@
 import React, { useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
 import BN from "bn.js";
-
+import LocalIdentityBadge from "../components/LocalIdentityBadge/LocalIdentityBadge";
+import { useIdentity } from "../components/IdentityManager/IdentityManager";
+import InfoBox from "../components/InfoBox";
 import {
   ContextMenu,
   ContextMenuItem,
   DataView,
-  IconAdd,
   IconLabel,
   IconRemove,
   Split,
   GU,
   useLayout,
   useTheme,
-  IdentityBadge,
+  IdentityBadge
 } from "@aragon/ui";
-import InfoBox from "../components/InfoBox";
 
-function Holders({ holders }) {
+function Holders({ holders, unwrapToken}) {
   const { layoutName } = useLayout();
   const compact = layoutName === "small";
 
@@ -25,11 +25,12 @@ function Holders({ holders }) {
     <Split
       primary={
         <DataView
-          fields={['Holder', 'Wrapped tokens balance']}
+          fields={["Holder", "Wrapped tokens balance"]}
           entries={holders}
           renderEntry={({ account, balance }) => {
-            return [<IdentityBadge entity={account} />, <div>{balance}</div>]
+            return [<IdentityBadge entity={account} />, <div>{balance}</div>];
           }}
+          renderEntryActions={() => <EntryActions unwrapToken={unwrapToken}/>}
         />
       }
       secondary={<InfoBox />}
@@ -45,17 +46,41 @@ Holders.defaultProps = {
   holders: []
 };
 
-function Amount({ children }) {
-  const theme = useTheme()
+
+
+function EntryActions({unwrapToken}) {
+  const theme = useTheme();
+  const logAction = action => () => console.log(action);
+  const actions = [
+    [unwrapToken, IconRemove, "Unwrap tokens"],
+    [logAction("edit"), IconLabel, "Edit label"]
+  ];
   return (
-    <div
-      css={`
-        color: ${theme.success};
-      `}
-    >
-      {children}
-    </div>
-  )
+    <ContextMenu>
+      {actions.map(([onClick, Icon, label], index) => (
+        <ContextMenuItem onClick={onClick} key={index}>
+          <span
+            css={`
+              position: relative;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: ${theme.surfaceContentSecondary};
+            `}
+          >
+            <Icon />
+          </span>
+          <span
+            css={`
+              margin-left: ${1 * GU}px;
+            `}
+          >
+            {label}
+          </span>
+        </ContextMenuItem>
+      ))}
+    </ContextMenu>
+  );
 }
 
 export default Holders;

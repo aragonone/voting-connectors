@@ -73,7 +73,7 @@ function App() {
           />
           <Holders holders={[
             { account: useConnectedAccount(), balance: tokenBalance },
-          ]} />
+          ]} unwrapToken={console.log("wrap")} />
           <Button
             mode="secondary"
             onClick={async () => await api.unlock(amount).toPromise()}
