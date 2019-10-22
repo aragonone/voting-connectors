@@ -1,47 +1,65 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
+import BN from "bn.js";
 
 const TokenBalanceOfABI = require('./abi/token-balanceOf.json')
+const TokenSymbolABI = require('./abi/token-symbol.json')
+
 const app = new Aragon()
 
 const initialState = async () => {
+  const orgTokenAddress = await getOrgTokenAddress()
+  const wrappedTokenAddress = await getWrappedTokenAddress()
+  const wrappedTokenSymbol = await getTokenSymbol(wrappedTokenAddress)
+
   return {
-    token: await getToken(),
-    erc20: await getERC20(),
-    erc20Balance: 0,
-    tokenBalance: 0,
-    account: undefined
+    orgTokenAddress,
+    wrappedTokenAddress,
+    wrappedTokenSymbol,
+    holders: []
   }
+}
+
+const updateHoldersArrayFromLockEvent = async (event, data, state) => {
+  const { entity: account, amount } = data
+  const { holders } = state
+
+  // Identify holder idx from account address.
+  let idx
+  if (holders.length === 0) {
+    idx = -1
+  } else {
+    const accounts = holders.map(holder => holder.account)
+    idx = accounts.indexOf(account)
+  }
+
+  // Push the holder into the array.
+  if (idx === -1) { // New holder
+    holders.push({ account, amount })
+  } else { // Update existing holder balance
+    const holder = holders[idx]
+    const currAmount = new BN(holder.amount)
+    const deltaAmount = new BN(amount)
+    if(event === 'TokensLocked') {
+      holder.amount = currAmount.add(deltaAmount).toString()
+    } else if(event === 'TokensUnlocked') {
+      holder.amount = currAmount.sub(deltaAmount).toString()
+    }
+    holders[idx] = holder
+  }
+
+  return { ...state, holders }
 }
 
 const reducer = async (state, { event, returnValues }) => {
   let nextState = { ...state }
-  const { token, erc20, account } = state
+  const { orgTokenAddress, wrappedTokenAddress } = state
 
   switch (event) {
     case 'TokensLocked':
-      nextState = {
-        ...state,
-        tokenBalance: await getTokenBalance(token, account),
-        erc20Balance: await getTokenBalance(erc20, account)
-      }
-      break
     case 'TokensUnlocked':
-      nextState = {
-        ...state,
-        tokenBalance: await getTokenBalance(token, account),
-        erc20Balance: await getTokenBalance(erc20, account)
-      }
-      break
-    case events.ACCOUNTS_TRIGGER:
-      const newAccount = returnValues.account
-      nextState = {
-        ...state,
-        account: newAccount,
-        tokenBalance: await getTokenBalance(token, newAccount),
-        erc20Balance: await getTokenBalance(erc20, newAccount)
-      }
+      nextState = await updateHoldersArrayFromLockEvent(event, returnValues, state)
       break
     case events.SYNC_STATUS_SYNCING:
       nextState = { ...state, isSyncing: true }
@@ -56,15 +74,20 @@ const reducer = async (state, { event, returnValues }) => {
 
 app.store(reducer, { init: initialState })
 
-async function getToken() {
+async function getOrgTokenAddress() {
   return app.call('token').toPromise()
 }
 
-async function getERC20() {
+async function getWrappedTokenAddress() {
   return app.call('erc20').toPromise()
 }
 
-async function getTokenBalance(token, account) {
-  const tokenContract = app.external(token, TokenBalanceOfABI)
+async function getTokenBalance(tokenAddress, account) {
+  const tokenContract = app.external(tokenAddress, TokenBalanceOfABI)
   return tokenContract.balanceOf(account).toPromise()
+}
+
+async function getTokenSymbol(tokenAddress) {
+  const tokenContract = app.external(tokenAddress, TokenSymbolABI)
+  return tokenContract.symbol().toPromise()
 }
