@@ -68,15 +68,17 @@ Holders.defaultProps = {
 
 function EntryActions({ unwrapToken, address }) {
   const theme = useTheme();
+  const connectedAccount = useConnectedAccount();
   const [label, showLocalIdentityModal] = useIdentity(address);
 
+  const isCurrentUser = addressesEqual(address, connectedAccount);
   const editLabel = useCallback(() => showLocalIdentityModal(address), [
     address,
     showLocalIdentityModal
   ]);
 
   const actions = [
-    [unwrapToken, IconRemove, "Unwrap tokens"],
+    ...(isCurrentUser ? [[unwrapToken, IconRemove, 'Unwrap tokens']] : []),
     [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`]
   ];
   return (
