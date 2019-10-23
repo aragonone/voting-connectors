@@ -1,15 +1,30 @@
 import React, { useCallback } from 'react'
 import { useAragonApi } from "@aragon/api-react";
 
-export function useUnwrapTokens() {
-  const api = useAragonApi()
-  console.log("a", api);
+function noop() {}
+
+
+// Unwrap tokens action
+export function useUnwrapTokensAction(onDone = noop) {
+  const { api, appState } = useAragonApi();
   return useCallback(
     amount => {
-      if (api) {
-        //await api.unlock(amount).toPromise()
-      }
+      api.unlock(1000).toPromise()
     },
     [api]
   )
+}
+
+
+
+// Handles the main logic of the app.
+export function useAppLogic() {
+
+  const actions = {
+    unwrapTokens: useUnwrapTokensAction(),
+  }
+
+  return {
+    actions,
+  }
 }

@@ -13,6 +13,7 @@ import {
 import styled from "styled-components";
 import NoWrappedTokens from "./screens/NoWrappedTokens";
 import Holders from "./screens/Holders";
+import { useAppLogic } from './app-logic'
 
 function App() {
   const { api, appState } = useAragonApi();
@@ -28,6 +29,10 @@ function App() {
 
   // TODO: Read this from an input component
   const amount = "10000000";
+
+  const {
+    actions,
+  } = useAppLogic()
 
   const theme = useTheme();
   return (
@@ -71,13 +76,7 @@ function App() {
               />
             }
           />
-          <Holders holders={holders} />
-          <Button
-            mode="secondary"
-            onClick={async () => await api.unlock(amount).toPromise()}
-          >
-            Unlock tokens
-          </Button>
+          <Holders holders={holders} unwrapTokens={actions.unwrapTokens} />
         </React.Fragment>
       ) : (
         <NoWrappedTokens isSyncing={isSyncing} />
