@@ -44,7 +44,7 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
               await api.lock(amount, intentParams).toPromise();
             }}
           >
-            Wrap token (rename to 'Lock tokens?')
+            Wrap token
           </Button>
         }
         illustration={

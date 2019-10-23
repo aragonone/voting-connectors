@@ -1,71 +1,71 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
-import PropTypes from 'prop-types'
+import React, { useCallback } from 'react'
 import { Subject } from 'rxjs'
+import { useApi } from '@aragon/api-react'
 
 const updates$ = new Subject()
 
 const IdentityContext = React.createContext({
-  resolve: () =>
-    Promise.reject(Error('Please set resolve using IdentityProvider')),
+  resolve: () => Promise.reject(Error('Please declare IdentityProvider')),
 })
 
-function useIdentity(address) {
-  const [name, setName] = useState(null)
-  const { resolve, updates$, showLocalIdentityModal } = useContext(
-    IdentityContext
+// Resolve a local identity address
+function useResolveLocalIdentity() {
+  const api = useApi()
+  return useCallback(
+    address => api.resolveAddressIdentity(address).toPromise(),
+    [api]
   )
+}
+
+// Request a modification of the local identity
+function useModifyLocalIdentity() {
+  const api = useApi()
+  return useCallback(
+    address => api.requestAddressIdentityModification(address).toPromise(),
+    [api]
+  )
+}
+
+// The main identity hook, exposing `name`
+// and `handleModifyLocalIdentity` based on the provided address.
+export function useIdentity(address) {
+  const [name, setName] = React.useState(null)
+  const resolveLocalIdentity = useResolveLocalIdentity()
+  const modifyLocalIdentity = useModifyLocalIdentity()
+
+  const { updates$ } = React.useContext(IdentityContext)
 
   const handleNameChange = useCallback(metadata => {
     setName(metadata ? metadata.name : null)
   }, [])
 
-  const handleShowLocalIdentityModal = useCallback(
-    address => {
-      // Emit an event whenever the modal is closed (when the promise resolves)
-      return showLocalIdentityModal(address)
-        .then(() => updates$.next(address))
-        .catch(e => null)
-    },
-    [showLocalIdentityModal, updates$]
+  const handleModifyLocalIdentity = address => {
+    // Emit an event whenever the address
+    // has been modified (when the promise resolves).
+    return modifyLocalIdentity(address).then(() => updates$.next(address))
+  }
+
+  React.useEffect(() => {
+    resolveLocalIdentity(address).then(handleNameChange)
+
+    // const subscription = updates$.subscribe(updatedAddress => {
+    //   if (updatedAddress.toLowerCase() === address.toLowerCase()) {
+    //     // Resolve and update state when the identity have been updated.
+    //     resolveLocalIdentity(address).then(handleNameChange)
+    //   }
+    // })
+    // return () => {
+    //   subscription.unsubscribe()
+    // }
+  }, [address, handleNameChange, resolveLocalIdentity, updates$])
+
+  return [name, handleModifyLocalIdentity]
+}
+
+export const IdentityProvider = ({ children }) => {
+  return (
+    <IdentityContext.Provider value={{ updates$ }}>
+      {children}
+    </IdentityContext.Provider>
   )
-
-  useEffect(() => {
-    resolve(address).then(handleNameChange)
-
-    const subscription = updates$.subscribe(updatedAddress => {
-      if (updatedAddress.toLowerCase() === address.toLowerCase()) {
-        // Resolve and update state when the identity have been updated
-        resolve(address).then(handleNameChange)
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [address, handleNameChange, updates$])
-
-  return [name, handleShowLocalIdentityModal]
 }
-
-const IdentityProvider = ({
-  onResolve,
-  onShowLocalIdentityModal,
-  children,
-}) => (
-  <IdentityContext.Provider
-    value={{
-      resolve: onResolve,
-      showLocalIdentityModal: onShowLocalIdentityModal,
-      updates$,
-    }}
-  >
-    {children}
-  </IdentityContext.Provider>
-)
-
-IdentityProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-  onResolve: PropTypes.func.isRequired,
-  onShowLocalIdentityModal: PropTypes.func.isRequired,
-}
-
-const IdentityConsumer = IdentityContext.Consumer
-
-export { IdentityConsumer, IdentityContext, IdentityProvider, useIdentity }

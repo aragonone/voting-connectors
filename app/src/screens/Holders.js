@@ -16,10 +16,14 @@ import {
   useTheme,
   IdentityBadge
 } from "@aragon/ui";
+import { addressesEqual } from "../web3-utils";
+import { useConnectedAccount } from "@aragon/api-react";
+import You from "../components/You";
 
-function Holders({ holders, unwrapToken}) {
+function Holders({ holders, unwrapToken }) {
   const { layoutName } = useLayout();
   const compact = layoutName === "small";
+  const connectedAccount = useConnectedAccount();
 
   return (
     <Split
@@ -28,9 +32,25 @@ function Holders({ holders, unwrapToken}) {
           fields={["Holder", "Wrapped tokens balance"]}
           entries={holders}
           renderEntry={({ account, amount }) => {
-            return [<IdentityBadge entity={account} />, <div>{amount}</div>];
+            const isCurrentUser = addressesEqual(account, connectedAccount);
+            return [
+              <div>
+                <LocalIdentityBadge
+                  entity={account}
+                  connectedAccount={isCurrentUser}
+                />
+                {isCurrentUser && <You />}
+              </div>,
+              <div>{amount}</div>
+            ];
           }}
-          renderEntryActions={() => <EntryActions unwrapToken={unwrapToken}/>}
+          renderEntryActions={({ account, amount }) => {
+            return [
+              <EntryActions unwrapToken={unwrapToken} address={account} />
+            ];
+          }}
+
+
         />
       }
       secondary={<InfoBox />}
@@ -46,14 +66,18 @@ Holders.defaultProps = {
   holders: []
 };
 
-
-
-function EntryActions({unwrapToken}) {
+function EntryActions({ unwrapToken, address }) {
   const theme = useTheme();
-  const logAction = action => () => console.log(action);
+  const [label, showLocalIdentityModal] = useIdentity(address);
+
+  const editLabel = useCallback(() => showLocalIdentityModal(address), [
+    address,
+    showLocalIdentityModal
+  ]);
+
   const actions = [
     [unwrapToken, IconRemove, "Unwrap tokens"],
-    [logAction("edit"), IconLabel, "Edit label"]
+    [editLabel, IconLabel, "Edit label"]
   ];
   return (
     <ContextMenu>
