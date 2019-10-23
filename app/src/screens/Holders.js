@@ -77,7 +77,7 @@ function EntryActions({ unwrapToken, address }) {
 
   const actions = [
     [unwrapToken, IconRemove, "Unwrap tokens"],
-    [editLabel, IconLabel, "Edit label"]
+    [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`]
   ];
   return (
     <ContextMenu>
