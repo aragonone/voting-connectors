@@ -3,13 +3,17 @@ import { Button, EmptyStateCard, GU, LoadingRing } from "@aragon/ui";
 import emptyStateImg from "../assets/empty-state.svg";
 import { useAragonApi } from "@aragon/api-react";
 import styled from "styled-components";
+import { useAppLogic } from "../app-logic";
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
   const { api, appState } = useAragonApi();
-  const { orgTokenAddress, wrappedTokenAddress, orgTokenBalance, wrappedTokenBalance } = appState;
-
-  // TODO: Read this from an input component
-  const amount = "10000000";
+  const {
+    orgTokenAddress,
+    wrappedTokenAddress,
+    orgTokenBalance,
+    wrappedTokenBalance
+  } = appState;
+  const { actions } = useAppLogic();
 
   return (
     <Box>
@@ -33,17 +37,7 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
           )
         }
         action={
-          <Button
-            wide
-            mode="strong"
-            onClick={async () => {
-              const app = (await api.currentApp().toPromise()).appAddress;
-              const intentParams = {
-                token: { address: wrappedTokenAddress, value: amount, spender: app }
-              };
-              await api.lock(amount, intentParams).toPromise();
-            }}
-          >
+          <Button wide mode="strong" onClick={actions.wrapTokens}>
             Wrap token
           </Button>
         }

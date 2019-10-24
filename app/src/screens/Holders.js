@@ -25,6 +25,7 @@ function Holders({ holders, unwrapTokens }) {
   const compact = layoutName === "small";
   const connectedAccount = useConnectedAccount();
 
+
   return (
     <Split
       primary={

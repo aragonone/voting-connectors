@@ -13,26 +13,13 @@ import {
 import styled from "styled-components";
 import NoWrappedTokens from "./screens/NoWrappedTokens";
 import Holders from "./screens/Holders";
-import { useAppLogic } from './app-logic'
+import { useAppLogic } from "./app-logic";
 
 function App() {
   const { api, appState } = useAragonApi();
-  const {
-    orgTokenAddress,
-    wrappedTokenAddress,
-    wrappedTokenSymbol,
-    holders,
-    orgTokenBalance,
-    wrappedTokenBalance,
-    isSyncing
-  } = appState;
+  const { wrappedTokenSymbol, holders, isSyncing } = appState;
 
-  // TODO: Read this from an input component
-  const amount = "10000000";
-
-  const {
-    actions,
-  } = useAppLogic()
+  const { actions } = useAppLogic();
 
   const theme = useTheme();
   return (
@@ -66,13 +53,7 @@ function App() {
                 label="Wrap tokens"
                 icon={<IconPlus />}
                 display="label"
-                onClick={async () => {
-                  const app = (await api.currentApp().toPromise()).appAddress;
-                  const intentParams = {
-                    token: { address: wrappedTokenAddress, value: amount, spender: app }
-                  };
-                  await api.lock(amount, intentParams).toPromise();
-                }}
+                onClick={actions.wrapTokens}
               />
             }
           />
