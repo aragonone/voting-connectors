@@ -16,6 +16,7 @@ import {
   useTheme,
   IdentityBadge
 } from "@aragon/ui";
+import { useAragonApi } from "@aragon/api-react";
 import { addressesEqual } from "../web3-utils";
 import { useConnectedAccount } from "@aragon/api-react";
 import You from "../components/You";
@@ -24,7 +25,8 @@ function Holders({ holders, unwrapTokens }) {
   const { layoutName } = useLayout();
   const compact = layoutName === "small";
   const connectedAccount = useConnectedAccount();
-
+  const { appState } = useAragonApi();
+  const { wrappedTokenSymbol } = appState;
 
   return (
     <Split
@@ -42,7 +44,7 @@ function Holders({ holders, unwrapTokens }) {
                 />
                 {isCurrentUser && <You />}
               </div>,
-              <div>{amount}</div>
+              <div>{amount} {wrappedTokenSymbol}</div>
             ];
           }}
           renderEntryActions={({ account, amount }) => {

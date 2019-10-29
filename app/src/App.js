@@ -13,13 +13,14 @@ import {
 import styled from "styled-components";
 import NoWrappedTokens from "./screens/NoWrappedTokens";
 import Holders from "./screens/Holders";
+import Panel from "./components/WrapTokensPanel";
 import { useAppLogic } from "./app-logic";
 
 function App() {
   const { api, appState } = useAragonApi();
   const { wrappedTokenSymbol, holders, isSyncing } = appState;
 
-  const { actions } = useAppLogic();
+  const { actions, wrapTokensPanel } = useAppLogic();
 
   const theme = useTheme();
   return (
@@ -53,7 +54,7 @@ function App() {
                 label="Wrap tokens"
                 icon={<IconPlus />}
                 display="label"
-                onClick={actions.wrapTokens}
+                onClick={wrapTokensPanel.requestOpen}
               />
             }
           />
@@ -62,6 +63,7 @@ function App() {
       ) : (
         <NoWrappedTokens isSyncing={isSyncing} />
       )}
+      <Panel panelState={wrapTokensPanel} onWrapTokens={actions.wrapTokens}/>
     </Main>
   );
 }

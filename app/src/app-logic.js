@@ -1,5 +1,6 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useState } from 'react'
 import { useAragonApi, useConnectedAccount } from "@aragon/api-react";
+import usePanelState from './hooks/usePanelState'
 
 function noop() {}
 
@@ -8,7 +9,7 @@ export function useUnwrapTokensAction(onDone = noop) {
   const { api, appState } = useAragonApi();
   return useCallback(
     amount => {
-      api.unlock(1000).toPromise();
+      api.unlock(10).toPromise();
     },
     [api]
   );
@@ -24,11 +25,11 @@ export function useWrapTokensAction(onDone = noop) {
       const intentParams = {
         token: {
           address: address,
-          value: 100,
+          value: amount,
           spender: app
         }
       };
-      await api.lock(100, intentParams).toPromise();
+      await api.lock(amount, intentParams).toPromise();
     },
     [api, appState]
   );
@@ -36,12 +37,14 @@ export function useWrapTokensAction(onDone = noop) {
 
 // Handles the main logic of the app.
 export function useAppLogic() {
+  const wrapTokensPanel = usePanelState()
   const actions = {
-    unwrapTokens: useUnwrapTokensAction(),
+    unwrapTokens: useUnwrapTokensAction(wrapTokensPanel.requestClose),
     wrapTokens: useWrapTokensAction()
   };
 
   return {
-    actions
+    actions,
+    wrapTokensPanel: useMemo(() => wrapTokensPanel, [wrapTokensPanel]),
   };
 }

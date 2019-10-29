@@ -4,6 +4,7 @@ import emptyStateImg from "../assets/empty-state.svg";
 import { useAragonApi } from "@aragon/api-react";
 import styled from "styled-components";
 import { useAppLogic } from "../app-logic";
+import Panel from "../components/WrapTokensPanel";
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
   const { api, appState } = useAragonApi();
@@ -13,7 +14,7 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
     orgTokenBalance,
     wrappedTokenBalance
   } = appState;
-  const { actions } = useAppLogic();
+  const { actions, wrapTokensPanel } = useAppLogic();
 
   return (
     <Box>
@@ -37,7 +38,7 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
           )
         }
         action={
-          <Button wide mode="strong" onClick={actions.wrapTokens}>
+          <Button wide mode="strong" onClick={wrapTokensPanel.requestOpen}>
             Wrap token
           </Button>
         }
@@ -52,6 +53,7 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
           />
         }
       />
+      <Panel panelState={wrapTokensPanel} onWrapTokens={actions.wrapTokens}/>
     </Box>
   );
 });
