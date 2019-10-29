@@ -5,7 +5,7 @@ const initialState = {
   amount: ""
 };
 
-const WrapTokensPanel = React.memo(({ panelState, onWrapTokens }) => {
+const UnwrapTokensPanel = React.memo(({ panelState, onUnwrapTokens }) => {
   return (
     <SidePanel
       title="Wrap tokens"
@@ -13,17 +13,17 @@ const WrapTokensPanel = React.memo(({ panelState, onWrapTokens }) => {
       onClose={panelState.requestClose}
       onTransitionEnd={panelState.onTransitionEnd}
     >
-      <WrapTokensPanelContent
-        onWrapTokens={onWrapTokens}
+      <UnwrapTokensPanelContent
+        onUnwrapTokens={onUnwrapTokens}
         panelOpened={panelState.didOpen}
       />
     </SidePanel>
   );
 });
 
-class WrapTokensPanelContent extends React.PureComponent {
+class UnwrapTokensPanelContent extends React.PureComponent {
   static defaultProps = {
-    onWrapTokens: () => {}
+    onUnwrapTokens: () => {}
   };
   state = {
     ...initialState
@@ -44,8 +44,9 @@ class WrapTokensPanelContent extends React.PureComponent {
 
   handleSubmit = event => {
     event.preventDefault();
-    this.props.onWrapTokens(this.state.amount);
+    this.props.onUnwrapTokens(this.state.amount);
   };
+
   render() {
     const { amount } = this.state;
     return (
@@ -61,10 +62,7 @@ class WrapTokensPanelContent extends React.PureComponent {
               margin-bottom: ${3 * GU}px;
             `}
           >
-            <Info>
-              You can wrap any ERC20 tokens to generate a “Minime” voting token
-              that you can use with this Aragon organization.
-            </Info>
+            <Info>bla bla</Info>
           </div>
           <Field label="Amount">
             <TextInput
@@ -77,7 +75,7 @@ class WrapTokensPanelContent extends React.PureComponent {
           </Field>
 
           <Button disabled={!amount} mode="strong" type="submit" wide>
-            Wrap tokens
+            Unwrap tokens
           </Button>
         </form>
       </div>
@@ -85,4 +83,4 @@ class WrapTokensPanelContent extends React.PureComponent {
   }
 }
 
-export default WrapTokensPanel;
+export default UnwrapTokensPanel;

@@ -14,14 +14,14 @@ import styled from "styled-components";
 import NoWrappedTokens from "./screens/NoWrappedTokens";
 import Holders from "./screens/Holders";
 import Panel from "./components/WrapTokensPanel";
+import UnwrapPanel from "./components/UnwrapTokensPanel";
 import { useAppLogic } from "./app-logic";
 
 function App() {
   const { api, appState } = useAragonApi();
   const { wrappedTokenSymbol, holders, isSyncing } = appState;
 
-  const { actions, wrapTokensPanel } = useAppLogic();
-
+  const { actions, wrapTokensPanel, unwrapTokensPanel } = useAppLogic();
   const theme = useTheme();
   return (
     <Main>
@@ -58,12 +58,19 @@ function App() {
               />
             }
           />
-          <Holders holders={holders} unwrapTokens={actions.unwrapTokens} />
+          <Holders
+            holders={holders}
+            unwrapTokens={unwrapTokensPanel.requestOpen}
+          />
         </React.Fragment>
       ) : (
         <NoWrappedTokens isSyncing={isSyncing} />
       )}
-      <Panel panelState={wrapTokensPanel} onWrapTokens={actions.wrapTokens}/>
+      <Panel panelState={wrapTokensPanel} onWrapTokens={actions.wrapTokens} />
+      <UnwrapPanel
+        panelState={unwrapTokensPanel}
+        onUnwrapTokens={actions.unwrapTokens}
+      />
     </Main>
   );
 }
