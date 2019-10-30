@@ -3,7 +3,7 @@ export function noop() {}
 
 // Handles the state of a panel.
 // Pass `onTransitionEnd` to the same SidePanel prop.
-export default function usePanelState({
+export default function useWrapPanelState({
   onDidOpen = noop,
   onDidClose = noop,
 } = {}) {

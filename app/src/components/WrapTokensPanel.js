@@ -5,16 +5,18 @@ const initialState = {
   amount: ""
 };
 
-const WrapTokensPanel = React.memo(({ panelState, onWrapTokens }) => {
+const WrapTokensPanel = React.memo(({ panelState, onAction, action, info }) => {
   return (
     <SidePanel
-      title="Wrap tokens"
+      title={action + " tokens"}
       opened={panelState.visible}
       onClose={panelState.requestClose}
       onTransitionEnd={panelState.onTransitionEnd}
     >
       <WrapTokensPanelContent
-        onWrapTokens={onWrapTokens}
+        onAction={onAction}
+        action={action}
+        info={info}
         panelOpened={panelState.didOpen}
       />
     </SidePanel>
@@ -23,7 +25,7 @@ const WrapTokensPanel = React.memo(({ panelState, onWrapTokens }) => {
 
 class WrapTokensPanelContent extends React.PureComponent {
   static defaultProps = {
-    onWrapTokens: () => {}
+    onAction: () => {}
   };
   state = {
     ...initialState
@@ -44,7 +46,7 @@ class WrapTokensPanelContent extends React.PureComponent {
 
   handleSubmit = event => {
     event.preventDefault();
-    this.props.onWrapTokens(this.state.amount);
+    this.props.onAction(this.state.amount);
   };
   render() {
     const { amount } = this.state;
@@ -62,8 +64,7 @@ class WrapTokensPanelContent extends React.PureComponent {
             `}
           >
             <Info>
-              You can wrap any ERC20 tokens to generate a “Minime” voting token
-              that you can use with this Aragon organization.
+              {this.props.info}
             </Info>
           </div>
           <Field label="Amount">
@@ -77,7 +78,7 @@ class WrapTokensPanelContent extends React.PureComponent {
           </Field>
 
           <Button disabled={!amount} mode="strong" type="submit" wide>
-            Wrap tokens
+            {this.props.action + " tokens"}
           </Button>
         </form>
       </div>

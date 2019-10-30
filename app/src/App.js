@@ -14,7 +14,6 @@ import styled from "styled-components";
 import NoWrappedTokens from "./screens/NoWrappedTokens";
 import Holders from "./screens/Holders";
 import Panel from "./components/WrapTokensPanel";
-import UnwrapPanel from "./components/UnwrapTokensPanel";
 import { useAppLogic } from "./app-logic";
 
 function App() {
@@ -66,10 +65,17 @@ function App() {
       ) : (
         <NoWrappedTokens isSyncing={isSyncing} />
       )}
-      <Panel panelState={wrapTokensPanel} onWrapTokens={actions.wrapTokens} />
-      <UnwrapPanel
+      <Panel
+        panelState={wrapTokensPanel}
+        onAction={actions.wrapTokens}
+        action="Wrap"
+        info="You can wrap any ERC20 tokens to generate a “Minime” voting token that you can use with this Aragon organization."
+      />
+      <Panel
         panelState={unwrapTokensPanel}
-        onUnwrapTokens={actions.unwrapTokens}
+        onAction={actions.unwrapTokens}
+        action="Unwrap"
+        info="You can easily unwrap your wrapped tokens (WANT) to recover your ANT."
       />
     </Main>
   );
