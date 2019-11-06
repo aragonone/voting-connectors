@@ -34,18 +34,26 @@ function App() {
                 css={`
                   display: flex;
                   align-items: center;
+                  flex: 1 1 auto;
+                  width: 0;
                 `}
               >
                 <h1
                   css={`
                     ${textStyle("title2")};
+                    flex: 0 1 auto;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                     color: ${theme.content};
                     margin-right: ${1 * GU}px;
                   `}
                 >
                   Token wrapper
                 </h1>
-                <Tag mode="identifier">{wrappedTokenSymbol}</Tag>
+                <div css="flex-shrink: 0">
+                  {wrappedTokenSymbol && <Tag mode="identifier">{wrappedTokenSymbol}</Tag>}
+                </div>
               </div>
             }
             secondary={
