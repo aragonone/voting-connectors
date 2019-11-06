@@ -53,7 +53,12 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
           />
         }
       />
-      <Panel panelState={wrapTokensPanel} onWrapTokens={actions.wrapTokens}/>
+      <Panel
+        panelState={wrapTokensPanel}
+        onAction={actions.wrapTokens}
+        action="Wrap"
+        info="You can wrap any ERC20 tokens to generate a “Minime” voting token that you can use with this Aragon organization."
+      />
     </Box>
   );
 });

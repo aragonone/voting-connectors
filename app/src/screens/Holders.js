@@ -21,7 +21,7 @@ import { addressesEqual } from "../web3-utils";
 import { useConnectedAccount } from "@aragon/api-react";
 import You from "../components/You";
 
-function Holders({ holders, unwrapTokens }) {
+function Holders({ holders, onUnwrapTokens }) {
   const { layoutName } = useLayout();
   const compact = layoutName === "small";
   const connectedAccount = useConnectedAccount();
@@ -49,7 +49,7 @@ function Holders({ holders, unwrapTokens }) {
           }}
           renderEntryActions={({ account, amount }) => {
             return [
-              <EntryActions unwrapTokens={unwrapTokens} address={account} />
+              <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />
             ];
           }}
 
@@ -69,7 +69,7 @@ Holders.defaultProps = {
   holders: []
 };
 
-function EntryActions({ unwrapTokens, address }) {
+function EntryActions({ onUnwrapTokens, address }) {
   const theme = useTheme();
   const connectedAccount = useConnectedAccount();
   const [label, showLocalIdentityModal] = useIdentity(address);
@@ -81,7 +81,7 @@ function EntryActions({ unwrapTokens, address }) {
   ]);
 
   const actions = [
-    ...(isCurrentUser ? [[unwrapTokens, IconRemove, 'Unwrap tokens']] : []),
+    ...(isCurrentUser ? [[onUnwrapTokens, IconRemove, 'Unwrap tokens']] : []),
     [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`]
   ];
   return (

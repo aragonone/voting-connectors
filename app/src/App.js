@@ -8,7 +8,8 @@ import {
   GU,
   textStyle,
   useTheme,
-  Tag
+  Tag,
+  SyncIndicator
 } from "@aragon/ui";
 import styled from "styled-components";
 import NoWrappedTokens from "./screens/NoWrappedTokens";
@@ -24,7 +25,7 @@ function App() {
   const theme = useTheme();
   return (
     <Main>
-      {isSyncing && <Syncing />}
+      <SyncIndicator visible={isSyncing} />
       {holders && holders.length > 0 ? (
         <React.Fragment>
           <Header
@@ -59,7 +60,7 @@ function App() {
           />
           <Holders
             holders={holders}
-            unwrapTokens={unwrapTokensPanel.requestOpen}
+            onUnwrapTokens={unwrapTokensPanel.requestOpen}
           />
         </React.Fragment>
       ) : (
@@ -80,11 +81,5 @@ function App() {
     </Main>
   );
 }
-
-const Syncing = styled.div.attrs({ children: "Syncing…" })`
-  position: absolute;
-  top: 15px;
-  right: 20px;
-`;
 
 export default App;
