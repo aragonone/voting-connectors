@@ -1,7 +1,7 @@
 import React from "react";
 import { Button, EmptyStateCard, GU, LoadingRing } from "@aragon/ui";
-import emptyStateImg from "../assets/empty-state.svg";
 import { useAragonApi } from "@aragon/api-react";
+import emptyStateImg from "../assets/empty-state.svg";
 import styled from "styled-components";
 import { useAppLogic } from "../app-logic";
 import Panel from "../components/WrapTokensPanel";

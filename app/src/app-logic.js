@@ -7,13 +7,13 @@ function noop() {}
 
 // Unwrap tokens action
 export function useUnwrapTokensAction(onDone = noop) {
-  const { api, appState } = useAragonApi();
+  const { api } = useAragonApi();
   return useCallback(
     async amount => {
       await api.unlock(amount).toPromise();
       onDone()
     },
-    [api, appState]
+    [api, onDone]
   );
 }
 
@@ -34,7 +34,7 @@ export function useWrapTokensAction(onDone = noop) {
       await api.lock(amount, intentParams).toPromise();
       onDone()
     },
-    [api, appState]
+    [api, appState, onDone]
   );
 }
 

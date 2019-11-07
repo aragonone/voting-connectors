@@ -20,7 +20,6 @@ export default function useWrapPanelState({
   }, [setVisible, setDidOpen])
 
   const requestClose = useCallback(() => {
-    console.log("requestClose");
     setVisible(false)
   }, [setVisible])
 

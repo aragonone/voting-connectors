@@ -2,9 +2,6 @@ import React, { useMemo } from 'react'
 import { useConnectedAccount, useNetwork } from '@aragon/api-react'
 import { Box, Distribution, GU, TokenBadge, useTheme } from '@aragon/ui'
 
-
-const DISTRIBUTION_ITEMS_MAX = 7
-
 function InfoBox() {
   const theme = useTheme()
 

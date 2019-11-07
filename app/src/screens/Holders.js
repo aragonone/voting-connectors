@@ -1,9 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
 import BN from "bn.js";
-import LocalIdentityBadge from "../components/LocalIdentityBadge/LocalIdentityBadge";
-import { useIdentity } from "../components/IdentityManager/IdentityManager";
-import InfoBox from "../components/InfoBox";
 import {
   ContextMenu,
   ContextMenuItem,
@@ -16,10 +13,13 @@ import {
   useTheme,
   IdentityBadge
 } from "@aragon/ui";
-import { useAragonApi } from "@aragon/api-react";
-import { addressesEqual } from "../web3-utils";
-import { useConnectedAccount } from "@aragon/api-react";
+import { useAragonApi, useConnectedAccount } from "@aragon/api-react";
+import LocalIdentityBadge from "../components/LocalIdentityBadge/LocalIdentityBadge";
+import InfoBox from "../components/InfoBox";
 import You from "../components/You";
+import { useIdentity } from "../components/IdentityManager/IdentityManager";
+import { addressesEqual } from "../web3-utils";
+
 
 function Holders({ holders, onUnwrapTokens }) {
   const { layoutName } = useLayout();

@@ -49,7 +49,7 @@ function App() {
                     margin-right: ${1 * GU}px;
                   `}
                 >
-                  Token wrapper
+                  Token Wrapper
                 </h1>
                 <div css="flex-shrink: 0">
                   {wrappedTokenSymbol && <Tag mode="identifier">{wrappedTokenSymbol}</Tag>}
@@ -61,7 +61,6 @@ function App() {
                 mode="strong"
                 label="Wrap tokens"
                 icon={<IconPlus />}
-                display="label"
                 onClick={wrapTokensPanel.requestOpen}
               />
             }
