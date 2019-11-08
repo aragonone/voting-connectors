@@ -14,14 +14,20 @@ export default function useWrapPanelState({
   // transitions in the panel content.
   const [didOpen, setDidOpen] = useState(false)
 
-  const requestOpen = useCallback(() => {
-    setVisible(true)
-    setDidOpen(false)
-  }, [setVisible, setDidOpen])
+  const requestOpen = useCallback(
+    () => {
+      setVisible(true)
+      setDidOpen(false)
+    },
+    [setVisible, setDidOpen]
+  )
 
-  const requestClose = useCallback(() => {
-    setVisible(false)
-  }, [setVisible])
+  const requestClose = useCallback(
+    () => {
+      setVisible(false)
+    },
+    [setVisible]
+  )
 
   // To be passed to the onTransitionEnd prop of SidePanel.
   const onTransitionEnd = useCallback(

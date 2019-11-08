@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { useAragonApi, useConnectedAccount } from "@aragon/api-react";
+import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
 import useWrapPanelState from './hooks/wrapPanelState'
 import useUnwrapPanelState from './hooks/unwrapPanelState'
 
@@ -7,35 +7,35 @@ function noop() {}
 
 // Unwrap tokens action
 export function useUnwrapTokensAction(onDone = noop) {
-  const { api } = useAragonApi();
+  const { api } = useAragonApi()
   return useCallback(
     async amount => {
-      await api.unlock(amount).toPromise();
+      await api.unlock(amount).toPromise()
       onDone()
     },
     [api, onDone]
-  );
+  )
 }
 
 // Wrap tokens action
 export function useWrapTokensAction(onDone = noop) {
-  const { api, appState } = useAragonApi();
+  const { api, appState } = useAragonApi()
   return useCallback(
     async amount => {
-      const app = (await api.currentApp().toPromise()).appAddress;
-      const address = appState.wrappedTokenAddress;
+      const app = (await api.currentApp().toPromise()).appAddress
+      const address = appState.wrappedTokenAddress
       const intentParams = {
         token: {
           address: address,
           value: amount,
-          spender: app
-        }
-      };
-      await api.lock(amount, intentParams).toPromise();
+          spender: app,
+        },
+      }
+      await api.lock(amount, intentParams).toPromise()
       onDone()
     },
     [api, appState, onDone]
-  );
+  )
 }
 
 // Handles the main logic of the app.
@@ -45,12 +45,12 @@ export function useAppLogic() {
 
   const actions = {
     wrapTokens: useWrapTokensAction(wrapTokensPanel.requestClose),
-    unwrapTokens: useUnwrapTokensAction(unwrapTokensPanel.requestClose)
-  };
+    unwrapTokens: useUnwrapTokensAction(unwrapTokensPanel.requestClose),
+  }
 
   return {
     actions,
     wrapTokensPanel: useMemo(() => wrapTokensPanel, [wrapTokensPanel]),
     unwrapTokensPanel: useMemo(() => unwrapTokensPanel, [unwrapTokensPanel]),
-  };
+  }
 }

@@ -1,7 +1,7 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
-import BN from "bn.js";
+import BN from 'bn.js'
 
 const TokenBalanceOfABI = require('./abi/token-balanceOf.json')
 const TokenSymbolABI = require('./abi/token-symbol.json')
@@ -19,7 +19,7 @@ const initialState = async () => {
     wrappedTokenAddress,
     wrappedTokenSymbol,
     erc20TokenSymbol,
-    holders: []
+    holders: [],
   }
 }
 
@@ -37,15 +37,17 @@ const updateHoldersArrayFromLockEvent = async (event, data, state) => {
   }
 
   // Push the holder into the array.
-  if (idx === -1) { // New holder
+  if (idx === -1) {
+    // New holder
     holders.push({ account, amount })
-  } else { // Update existing holder balance
+  } else {
+    // Update existing holder balance
     const holder = holders[idx]
     const currAmount = new BN(holder.amount)
     const deltaAmount = new BN(amount)
-    if(event === 'TokensLocked') {
+    if (event === 'TokensLocked') {
       holder.amount = currAmount.add(deltaAmount).toString()
-    } else if(event === 'TokensUnlocked') {
+    } else if (event === 'TokensUnlocked') {
       holder.amount = currAmount.sub(deltaAmount).toString()
     }
     holders[idx] = holder
@@ -61,7 +63,11 @@ const reducer = async (state, { event, returnValues }) => {
   switch (event) {
     case 'TokensLocked':
     case 'TokensUnlocked':
-      nextState = await updateHoldersArrayFromLockEvent(event, returnValues, state)
+      nextState = await updateHoldersArrayFromLockEvent(
+        event,
+        returnValues,
+        state
+      )
       break
     case events.SYNC_STATUS_SYNCING:
       nextState = { ...state, isSyncing: true }

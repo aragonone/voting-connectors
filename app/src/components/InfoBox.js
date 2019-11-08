@@ -1,6 +1,13 @@
-import React, { useMemo } from "react";
-import { useConnectedAccount, useNetwork } from "@aragon/api-react";
-import { Box, Distribution, GU, TokenBadge, useTheme, textStyle } from "@aragon/ui";
+import React, { useMemo } from 'react'
+import { useConnectedAccount, useNetwork } from '@aragon/api-react'
+import {
+  Box,
+  Distribution,
+  GU,
+  TokenBadge,
+  useTheme,
+  textStyle,
+} from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 
 function InfoBox({
@@ -8,27 +15,29 @@ function InfoBox({
   wrappedTokenSymbol,
   totalSuply,
   wrappedTokenAddress,
-  orgTokenAddress
+  orgTokenAddress,
 }) {
-  const theme = useTheme();
+  const theme = useTheme()
 
   return (
     <React.Fragment>
       <Box heading="Wrapped Token">
         <h2
           css={`
-            ${textStyle("title4")};
+            ${textStyle('title4')};
             display: flex;
             justify-content: space-between;
           `}
         >
           <span>{erc20TokenSymbol}</span>
-          <span><img src={wrap}/></span>
+          <span>
+            <img src={wrap} />
+          </span>
           <span>{wrappedTokenSymbol}</span>
         </h2>
         <p>
           You can wrap {erc20TokenSymbol} so you can use it within this Aragon
-          organization. You can unwrap it to get back your {erc20TokenSymbol}{" "}
+          organization. You can unwrap it to get back your {erc20TokenSymbol}{' '}
           tokens it at time.
         </p>
         <br />
@@ -39,15 +48,15 @@ function InfoBox({
       <Box heading="Token Info">
         <ul>
           {[
-            ["Total supply", <strong>{totalSuply}</strong>],
-            ["Transferable", <strong> no</strong>],
+            ['Total supply', <strong>{totalSuply}</strong>],
+            ['Transferable', <strong> no</strong>],
             [
-              "Token",
+              'Token',
               <TokenBadge
                 address={wrappedTokenAddress}
                 symbol={wrappedTokenSymbol}
-              />
-            ]
+              />,
+            ],
           ].map(([label, content], index) => (
             <li
               key={index}
@@ -85,7 +94,7 @@ function InfoBox({
         </ul>
       </Box>
     </React.Fragment>
-  );
+  )
 }
 
-export default InfoBox;
+export default InfoBox

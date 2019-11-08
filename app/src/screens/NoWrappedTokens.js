@@ -1,22 +1,22 @@
-import React from "react";
-import { Button, EmptyStateCard, GU, LoadingRing } from "@aragon/ui";
-import { useAragonApi } from "@aragon/api-react";
-import styled from "styled-components";
-import { useAppLogic } from "../app-logic";
-import Panel from "../components/WrapTokensPanel";
-import emptyStateImg from "../assets/empty-state.png";
+import React from 'react'
+import { Button, EmptyStateCard, GU, LoadingRing } from '@aragon/ui'
+import { useAragonApi } from '@aragon/api-react'
+import styled from 'styled-components'
+import { useAppLogic } from '../app-logic'
+import Panel from '../components/WrapTokensPanel'
+import emptyStateImg from '../assets/empty-state.png'
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
-  const { api, appState } = useAragonApi();
+  const { api, appState } = useAragonApi()
   const {
     orgTokenAddress,
     wrappedTokenAddress,
     orgTokenBalance,
     wrappedTokenBalance,
     erc20TokenSymbol,
-    wrappedTokenSymbol
-  } = appState;
-  const { actions, wrapTokensPanel } = useAppLogic();
+    wrappedTokenSymbol,
+  } = appState
+  const { actions, wrapTokensPanel } = useAppLogic()
 
   return (
     <React.Fragment>
@@ -76,17 +76,16 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
         wrappedTokenSymbol={wrappedTokenSymbol}
         action="Wrap"
         info={
-          "You can wrap " +
+          'You can wrap ' +
           erc20TokenSymbol +
-          " into an ERC20-compliant token that you can use within this organization. 1 " +
+          ' into an ERC20-compliant token that you can use within this organization. 1 ' +
           erc20TokenSymbol +
-          " = 1 " +
+          ' = 1 ' +
           wrappedTokenSymbol
         }
       />
     </React.Fragment>
-  );
-});
+  )
+})
 
-
-export default NoWrappedTokens;
+export default NoWrappedTokens

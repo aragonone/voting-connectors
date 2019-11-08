@@ -1,6 +1,6 @@
-import React, { useMemo, useCallback } from "react";
-import PropTypes from "prop-types";
-import BN from "bn.js";
+import React, { useMemo, useCallback } from 'react'
+import PropTypes from 'prop-types'
+import BN from 'bn.js'
 import {
   ContextMenu,
   ContextMenuItem,
@@ -10,27 +10,27 @@ import {
   GU,
   useLayout,
   useTheme,
-  IdentityBadge
-} from "@aragon/ui";
-import { useAragonApi, useConnectedAccount } from "@aragon/api-react";
-import LocalIdentityBadge from "../components/LocalIdentityBadge/LocalIdentityBadge";
-import You from "../components/You";
-import { useIdentity } from "../components/IdentityManager/IdentityManager";
-import { addressesEqual } from "../web3-utils";
+  IdentityBadge,
+} from '@aragon/ui'
+import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
+import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
+import You from '../components/You'
+import { useIdentity } from '../components/IdentityManager/IdentityManager'
+import { addressesEqual } from '../web3-utils'
 
 function Holders({ holders, onUnwrapTokens }) {
-  const { layoutName } = useLayout();
-  const compact = layoutName === "small";
-  const connectedAccount = useConnectedAccount();
-  const { appState } = useAragonApi();
-  const { wrappedTokenSymbol } = appState;
+  const { layoutName } = useLayout()
+  const compact = layoutName === 'small'
+  const connectedAccount = useConnectedAccount()
+  const { appState } = useAragonApi()
+  const { wrappedTokenSymbol } = appState
 
   return (
     <DataView
-      fields={["Holder", "Wrapped tokens balance"]}
+      fields={['Holder', 'Wrapped tokens balance']}
       entries={holders}
       renderEntry={({ account, amount }) => {
-        const isCurrentUser = addressesEqual(account, connectedAccount);
+        const isCurrentUser = addressesEqual(account, connectedAccount)
         return [
           <div>
             <LocalIdentityBadge
@@ -41,41 +41,41 @@ function Holders({ holders, onUnwrapTokens }) {
           </div>,
           <div>
             {amount} {wrappedTokenSymbol}
-          </div>
-        ];
+          </div>,
+        ]
       }}
       renderEntryActions={({ account, amount }) => {
         return [
-          <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />
-        ];
+          <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />,
+        ]
       }}
     />
-  );
+  )
 }
 
 Holders.propTypes = {
-  holders: PropTypes.array
-};
+  holders: PropTypes.array,
+}
 
 Holders.defaultProps = {
-  holders: []
-};
+  holders: [],
+}
 
 function EntryActions({ onUnwrapTokens, address }) {
-  const theme = useTheme();
-  const connectedAccount = useConnectedAccount();
-  const [label, showLocalIdentityModal] = useIdentity(address);
+  const theme = useTheme()
+  const connectedAccount = useConnectedAccount()
+  const [label, showLocalIdentityModal] = useIdentity(address)
 
-  const isCurrentUser = addressesEqual(address, connectedAccount);
+  const isCurrentUser = addressesEqual(address, connectedAccount)
   const editLabel = useCallback(() => showLocalIdentityModal(address), [
     address,
-    showLocalIdentityModal
-  ]);
+    showLocalIdentityModal,
+  ])
 
   const actions = [
-    ...(isCurrentUser ? [[onUnwrapTokens, IconRemove, "Unwrap tokens"]] : []),
-    [editLabel, IconLabel, `${label ? "Edit" : "Add"} custom label`]
-  ];
+    ...(isCurrentUser ? [[onUnwrapTokens, IconRemove, 'Unwrap tokens']] : []),
+    [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`],
+  ]
   return (
     <ContextMenu>
       {actions.map(([onClick, Icon, label], index) => (
@@ -101,7 +101,7 @@ function EntryActions({ onUnwrapTokens, address }) {
         </ContextMenuItem>
       ))}
     </ContextMenu>
-  );
+  )
 }
 
-export default Holders;
+export default Holders
