@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
-import useWrapPanelState from './hooks/wrapPanelState'
-import useUnwrapPanelState from './hooks/unwrapPanelState'
+import usePanelState from './hooks/usePanelState'
+import useUnwrapPanelState from './hooks/usePanelState'
 
 function noop() {}
 
@@ -40,8 +40,8 @@ export function useWrapTokensAction(onDone = noop) {
 
 // Handles the main logic of the app.
 export function useAppLogic() {
-  const wrapTokensPanel = useWrapPanelState()
-  const unwrapTokensPanel = useUnwrapPanelState()
+  const wrapTokensPanel = usePanelState()
+  const unwrapTokensPanel = usePanelState()
 
   const actions = {
     wrapTokens: useWrapTokensAction(wrapTokensPanel.requestClose),

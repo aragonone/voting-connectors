@@ -3,7 +3,7 @@ import { Button, EmptyStateCard, GU, LoadingRing } from '@aragon/ui'
 import { useAragonApi } from '@aragon/api-react'
 import styled from 'styled-components'
 import { useAppLogic } from '../app-logic'
-import Panel from '../components/WrapTokensPanel'
+import Panel from '../components/ActionsPanel'
 import emptyStateImg from '../assets/empty-state.png'
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {

@@ -16,7 +16,7 @@ import styled from 'styled-components'
 import { useAppLogic } from './app-logic'
 import NoWrappedTokens from './screens/NoWrappedTokens'
 import Holders from './screens/Holders'
-import Panel from './components/WrapTokensPanel'
+import Panel from './components/ActionsPanel'
 import InfoBox from './components/InfoBox'
 import { IdentityProvider } from './components/IdentityManager/IdentityManager'
 
