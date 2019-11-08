@@ -1,10 +1,10 @@
 import React from "react";
 import { Button, EmptyStateCard, GU, LoadingRing } from "@aragon/ui";
 import { useAragonApi } from "@aragon/api-react";
-import emptyStateImg from "../assets/empty-state.svg";
 import styled from "styled-components";
 import { useAppLogic } from "../app-logic";
 import Panel from "../components/WrapTokensPanel";
+import emptyStateImg from "../assets/empty-state.png";
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
   const { api, appState } = useAragonApi();
@@ -12,13 +12,23 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
     orgTokenAddress,
     wrappedTokenAddress,
     orgTokenBalance,
-    wrappedTokenBalance
+    wrappedTokenBalance,
+    erc20TokenSymbol,
+    wrappedTokenSymbol
   } = appState;
   const { actions, wrapTokensPanel } = useAppLogic();
 
   return (
-    <Box>
+    <React.Fragment>
       <EmptyStateCard
+        css={`
+          width: 100%;
+          height: 600px;
+          max-height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `}
         text={
           isSyncing ? (
             <div
@@ -34,7 +44,13 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
               <span>Syncing…</span>
             </div>
           ) : (
-            "No tokens here!"
+            <div
+              css={`
+                margin: ${3 * GU}px 0;
+              `}
+            >
+              No tokens here!
+            </div>
           )
         }
         action={
@@ -56,18 +72,21 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
       <Panel
         panelState={wrapTokensPanel}
         onAction={actions.wrapTokens}
+        erc20TokenSymbol={erc20TokenSymbol}
+        wrappedTokenSymbol={wrappedTokenSymbol}
         action="Wrap"
-        info="You can wrap any ERC20 tokens to generate a “Minime” voting token that you can use with this Aragon organization."
+        info={
+          "You can wrap " +
+          erc20TokenSymbol +
+          " into an ERC20-compliant token that you can use within this organization. 1 " +
+          erc20TokenSymbol +
+          " = 1 " +
+          wrappedTokenSymbol
+        }
       />
-    </Box>
+    </React.Fragment>
   );
 });
 
-const Box = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-`;
 
 export default NoWrappedTokens;

@@ -12,11 +12,13 @@ const initialState = async () => {
   const orgTokenAddress = await getOrgTokenAddress()
   const wrappedTokenAddress = await getWrappedTokenAddress()
   const wrappedTokenSymbol = await getTokenSymbol(wrappedTokenAddress)
+  const erc20TokenSymbol = await getTokenSymbol(orgTokenAddress)
 
   return {
     orgTokenAddress,
     wrappedTokenAddress,
     wrappedTokenSymbol,
+    erc20TokenSymbol,
     holders: []
   }
 }

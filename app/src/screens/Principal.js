@@ -7,6 +7,7 @@ import {
   DataView,
   IconLabel,
   IconRemove,
+  Split,
   GU,
   useLayout,
   useTheme,
@@ -14,11 +15,13 @@ import {
 } from "@aragon/ui";
 import { useAragonApi, useConnectedAccount } from "@aragon/api-react";
 import LocalIdentityBadge from "../components/LocalIdentityBadge/LocalIdentityBadge";
+import InfoBox from "../components/InfoBox";
 import You from "../components/You";
 import { useIdentity } from "../components/IdentityManager/IdentityManager";
 import { addressesEqual } from "../web3-utils";
 
-function Holders({ holders, onUnwrapTokens }) {
+
+function Principal({ holders, onUnwrapTokens }) {
   const { layoutName } = useLayout();
   const compact = layoutName === "small";
   const connectedAccount = useConnectedAccount();
@@ -26,29 +29,34 @@ function Holders({ holders, onUnwrapTokens }) {
   const { wrappedTokenSymbol } = appState;
 
   return (
-    <DataView
-      fields={["Holder", "Wrapped tokens balance"]}
-      entries={holders}
-      renderEntry={({ account, amount }) => {
-        const isCurrentUser = addressesEqual(account, connectedAccount);
-        return [
-          <div>
-            <LocalIdentityBadge
-              entity={account}
-              connectedAccount={isCurrentUser}
-            />
-            {isCurrentUser && <You />}
-          </div>,
-          <div>
-            {amount} {wrappedTokenSymbol}
-          </div>
-        ];
-      }}
-      renderEntryActions={({ account, amount }) => {
-        return [
-          <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />
-        ];
-      }}
+    <Split
+      primary={
+        <DataView
+          fields={["Holder", "Wrapped tokens balance"]}
+          entries={holders}
+          renderEntry={({ account, amount }) => {
+            const isCurrentUser = addressesEqual(account, connectedAccount);
+            return [
+              <div>
+                <LocalIdentityBadge
+                  entity={account}
+                  connectedAccount={isCurrentUser}
+                />
+                {isCurrentUser && <You />}
+              </div>,
+              <div>{amount} {wrappedTokenSymbol}</div>
+            ];
+          }}
+          renderEntryActions={({ account, amount }) => {
+            return [
+              <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />
+            ];
+          }}
+
+
+        />
+      }
+      secondary={<InfoBox />}
     />
   );
 }
@@ -73,8 +81,8 @@ function EntryActions({ onUnwrapTokens, address }) {
   ]);
 
   const actions = [
-    ...(isCurrentUser ? [[onUnwrapTokens, IconRemove, "Unwrap tokens"]] : []),
-    [editLabel, IconLabel, `${label ? "Edit" : "Add"} custom label`]
+    ...(isCurrentUser ? [[onUnwrapTokens, IconRemove, 'Unwrap tokens']] : []),
+    [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`]
   ];
   return (
     <ContextMenu>
@@ -104,4 +112,4 @@ function EntryActions({ onUnwrapTokens, address }) {
   );
 }
 
-export default Holders;
+export default Principal;

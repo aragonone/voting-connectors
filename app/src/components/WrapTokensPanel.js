@@ -5,7 +5,8 @@ const initialState = {
   amount: ""
 };
 
-const WrapTokensPanel = React.memo(({ panelState, onAction, action, info }) => {
+const WrapTokensPanel = React.memo(({ panelState, onAction, action, info, erc20TokenSymbol, wrappedTokenSymbol}) => {
+
   return (
     <SidePanel
       title={action + " tokens"}
@@ -17,6 +18,8 @@ const WrapTokensPanel = React.memo(({ panelState, onAction, action, info }) => {
         onAction={onAction}
         action={action}
         info={info}
+        erc20TokenSymbol={erc20TokenSymbol}
+        wrappedTokenSymbol={wrappedTokenSymbol}
         panelOpened={panelState.didOpen}
       />
     </SidePanel>
@@ -50,6 +53,7 @@ class WrapTokensPanelContent extends React.PureComponent {
   };
   render() {
     const { amount } = this.state;
+
     return (
       <div>
         <form
@@ -67,16 +71,38 @@ class WrapTokensPanelContent extends React.PureComponent {
               {this.props.info}
             </Info>
           </div>
-          <Field label="Amount">
+          <Field label={this.props.action == 'Wrap' ? "Amount" : "Wrapped token amount"} >
             <TextInput
               ref={amount => (this.amountInput = amount)}
               value={amount}
+              min={0}
+              max={300}
               onChange={this.handleAmountChange}
+              adornment={this.props.action == 'Wrap' ? this.props.erc20TokenSymbol : this.props.wrappedTokenSymbol}
+              adornmentPosition="end"
+              adornmentSettings={{
+                width: 55,
+                padding: 8,
+              }}
               required
               wide
             />
           </Field>
-
+          <Field label={this.props.action == 'Wrap' ? "Wrapped token amount" : "Amount"} >
+            <TextInput
+              ref={amount => (this.amountInput = amount)}
+              value={amount}
+              onChange={this.handleAmountChange}
+              adornment={this.props.action == 'Wrap' ? this.props.wrappedTokenSymbol : this.props.erc20TokenSymbol}
+              adornmentPosition="end"
+              adornmentSettings={{
+                width: 55,
+                padding: 8,
+              }}
+              required
+              wide
+            />
+          </Field>
           <Button disabled={!amount} mode="strong" type="submit" wide>
             {this.props.action + " tokens"}
           </Button>
@@ -85,5 +111,6 @@ class WrapTokensPanelContent extends React.PureComponent {
     );
   }
 }
+
 
 export default WrapTokensPanel;
