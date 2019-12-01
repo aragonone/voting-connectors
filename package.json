@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Aragon token wrapper app",
   "author": "Aragon One",
-  "license": "GPL-3.0-or-later",
+  "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
   "scripts": {
     "prepare": "cd app && npm install && cd ..",
     "compile": "aragon contracts compile",
