@@ -59,7 +59,6 @@ const updateHoldersArrayFromLockEvent = async (event, data, state) => {
 
 const reducer = async (state, { event, returnValues }) => {
   let nextState = { ...state }
-  const { orgTokenAddress, wrappedTokenAddress } = state
 
   switch (event) {
     case 'TokensLocked':

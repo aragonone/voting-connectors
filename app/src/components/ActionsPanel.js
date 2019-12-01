@@ -79,7 +79,7 @@ class WrapTokensPanelContent extends React.PureComponent {
           </div>
           <Field
             label={
-              this.props.action == 'Wrap' ? 'Amount' : 'Wrapped token amount'
+              this.props.action === 'Wrap' ? 'Amount' : 'Wrapped token amount'
             }
           >
             <TextInput
@@ -89,7 +89,7 @@ class WrapTokensPanelContent extends React.PureComponent {
               max={300}
               onChange={this.handleAmountChange}
               adornment={
-                this.props.action == 'Wrap'
+                this.props.action === 'Wrap'
                   ? this.props.erc20TokenSymbol
                   : this.props.wrappedTokenSymbol
               }
@@ -104,7 +104,7 @@ class WrapTokensPanelContent extends React.PureComponent {
           </Field>
           <Field
             label={
-              this.props.action == 'Wrap' ? 'Wrapped token amount' : 'Amount'
+              this.props.action === 'Wrap' ? 'Wrapped token amount' : 'Amount'
             }
           >
             <TextInput
@@ -112,7 +112,7 @@ class WrapTokensPanelContent extends React.PureComponent {
               value={amount}
               onChange={this.handleAmountChange}
               adornment={
-                this.props.action == 'Wrap'
+                this.props.action === 'Wrap'
                   ? this.props.wrappedTokenSymbol
                   : this.props.erc20TokenSymbol
               }

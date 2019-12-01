@@ -1,21 +1,13 @@
 import React from 'react'
 import { Button, EmptyStateCard, GU, LoadingRing } from '@aragon/ui'
 import { useAragonApi } from '@aragon/api-react'
-import styled from 'styled-components'
 import { useAppLogic } from '../app-logic'
 import Panel from '../components/ActionsPanel'
 import emptyStateImg from '../assets/empty-state.png'
 
 const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
-  const { api, appState } = useAragonApi()
-  const {
-    orgTokenAddress,
-    wrappedTokenAddress,
-    orgTokenBalance,
-    wrappedTokenBalance,
-    erc20TokenSymbol,
-    wrappedTokenSymbol,
-  } = appState
+  const { appState } = useAragonApi()
+  const { erc20TokenSymbol, wrappedTokenSymbol } = appState
   const { actions, wrapTokensPanel } = useAppLogic()
 
   return (

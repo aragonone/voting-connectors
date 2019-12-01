@@ -1,7 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
+import { useCallback, useMemo } from 'react'
+import { useAragonApi } from '@aragon/api-react'
 import usePanelState from './hooks/usePanelState'
-import useUnwrapPanelState from './hooks/usePanelState'
 
 function noop() {}
 

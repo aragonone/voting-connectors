@@ -1,13 +1,5 @@
-import React, { useMemo } from 'react'
-import { useConnectedAccount, useNetwork } from '@aragon/api-react'
-import {
-  Box,
-  Distribution,
-  GU,
-  TokenBadge,
-  useTheme,
-  textStyle,
-} from '@aragon/ui'
+import React from 'react'
+import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 
 function InfoBox({

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
+import { useAragonApi } from '@aragon/api-react'
 import {
   Main,
   Button,
@@ -12,7 +12,6 @@ import {
   Tag,
   SyncIndicator,
 } from '@aragon/ui'
-import styled from 'styled-components'
 import { useAppLogic } from './app-logic'
 import NoWrappedTokens from './screens/NoWrappedTokens'
 import Holders from './screens/Holders'
@@ -21,7 +20,7 @@ import InfoBox from './components/InfoBox'
 import { IdentityProvider } from './components/IdentityManager/IdentityManager'
 
 function App() {
-  const { api, appState } = useAragonApi()
+  const { appState } = useAragonApi()
   const {
     wrappedTokenSymbol,
     erc20TokenSymbol,

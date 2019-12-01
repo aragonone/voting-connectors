@@ -1,6 +1,5 @@
-import React, { useMemo, useCallback } from 'react'
+import React, { useCallback } from 'react'
 import PropTypes from 'prop-types'
-import BN from 'bn.js'
 import {
   ContextMenu,
   ContextMenuItem,
@@ -8,9 +7,7 @@ import {
   IconLabel,
   IconRemove,
   GU,
-  useLayout,
   useTheme,
-  IdentityBadge,
 } from '@aragon/ui'
 import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
@@ -19,8 +16,6 @@ import { useIdentity } from '../components/IdentityManager/IdentityManager'
 import { addressesEqual } from '../web3-utils'
 
 function Holders({ holders, onUnwrapTokens }) {
-  const { layoutName } = useLayout()
-  const compact = layoutName === 'small'
   const connectedAccount = useConnectedAccount()
   const { appState } = useAragonApi()
   const { wrappedTokenSymbol } = appState
