@@ -1,13 +1,3 @@
-/*
- * SPDX-License-Identitifer:    GPL-3.0-or-later
- *
- * This file requires contract dependencies which are licensed as
- * GPL-3.0-or-later, forcing it to also be licensed as such.
- *
- * This is the only file in your project that requires this license and
- * you are free to choose a different license for the rest of the project.
- */
-
 pragma solidity 0.4.24;
 
 import "@aragon/os/contracts/factory/DAOFactory.sol";
@@ -19,8 +9,8 @@ import "@aragon/os/contracts/apm/APMNamehash.sol";
 import "@aragon/apps-voting/contracts/Voting.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 
-import "./test/mocks/ERC20Sample.sol";
-import "./TokenWrapper.sol";
+import "../test/mocks/ERC20Sample.sol";
+import "../TokenWrapper.sol";
 
 
 contract TemplateBase is APMNamehash {
@@ -51,7 +41,7 @@ contract TemplateBase is APMNamehash {
 }
 
 
-contract Template is TemplateBase {
+contract ExampleTemplate is TemplateBase {
     MiniMeTokenFactory tokenFactory;
 
     uint64 constant PCT = 10 ** 16;

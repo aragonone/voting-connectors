@@ -44,11 +44,11 @@ run() {
 }
 
 runUsingIPFS() {
-  npx aragon run --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
+  npx aragon run --files dist --template ExampleTemplate --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 runUsingHTTP() {
-  npx aragon run --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
+  npx aragon run --http localhost:8001 --http-served-from ./dist --template ExampleTemplate --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 startDevchain
