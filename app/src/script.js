@@ -1,5 +1,6 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
+
 import Aragon, { events } from '@aragon/api'
 import BN from 'bn.js'
 
