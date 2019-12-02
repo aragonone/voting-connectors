@@ -71,7 +71,8 @@ contract ExampleTemplate is TemplateBase {
         voting.initialize(token, 50 * PCT, 20 * PCT, 1 days);
 
         // HACK: create a random permission on TokenWrapper so it is detected as an app
-        acl.createPermission(address(-1), app, bytes32(-1), address(1));
+        // Allow root to remove this permission if they'd like to uninstall this app in the future
+        acl.createPermission(address(-1), app, bytes32(-1), root);
 
         acl.createPermission(ANY_ENTITY, voting, voting.CREATE_VOTES_ROLE(), root);
 
