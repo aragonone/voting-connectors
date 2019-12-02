@@ -9,7 +9,7 @@ import {
   GU,
   useTheme,
 } from '@aragon/ui'
-import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
+import { useAppState, useConnectedAccount } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 import You from '../components/You'
 import { useIdentity } from '../components/IdentityManager/IdentityManager'
@@ -17,8 +17,7 @@ import { addressesEqual } from '../web3-utils'
 
 function Holders({ holders, onUnwrapTokens }) {
   const connectedAccount = useConnectedAccount()
-  const { appState } = useAragonApi()
-  const { wrappedTokenSymbol } = appState
+  const { wrappedTokenSymbol } = useAppState()
 
   return (
     <DataView

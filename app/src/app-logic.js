@@ -1,15 +1,16 @@
-import { useCallback, useMemo } from 'react'
-import { useAragonApi } from '@aragon/api-react'
+import { useCallback } from 'react'
+import { useApi, useAppState, useCurrentApp } from '@aragon/api-react'
 import usePanelState from './hooks/usePanelState'
 
 function noop() {}
 
 // Unwrap tokens action
 export function useUnwrapTokensAction(onDone = noop) {
-  const { api } = useAragonApi()
+  const api = useApi()
   return useCallback(
-    async amount => {
-      await api.unlock(amount).toPromise()
+    amount => {
+      // Don't care about response
+      api.unlock(amount).toPromise()
       onDone()
     },
     [api, onDone]
@@ -18,22 +19,29 @@ export function useUnwrapTokensAction(onDone = noop) {
 
 // Wrap tokens action
 export function useWrapTokensAction(onDone = noop) {
-  const { api, appState } = useAragonApi()
+  const api = useApi()
+  const { wrappedTokenAddress } = useAppState()
+  const currentApp = useCurrentApp()
   return useCallback(
-    async amount => {
-      const app = (await api.currentApp().toPromise()).appAddress
-      const address = appState.wrappedTokenAddress
+    amount => {
+      if (!currentApp) {
+        return
+      }
+
+      // Set pre-transaction parameters for approving original token
       const intentParams = {
         token: {
-          address: address,
+          address: wrappedTokenAddress,
           value: amount,
-          spender: app,
+          spender: currentApp.appAddress,
         },
       }
-      await api.lock(amount, intentParams).toPromise()
+
+      // Don't care about response
+      api.lock(amount, intentParams).toPromise()
       onDone()
     },
-    [api, appState, onDone]
+    [api, currentApp, wrappedTokenAddress, onDone]
   )
 }
 
