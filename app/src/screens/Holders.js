@@ -22,7 +22,7 @@ function Holders({ holders, onUnwrapTokens }) {
 
   return (
     <DataView
-      fields={['Holder', 'Wrapped tokens balance']}
+      fields={['Holder', 'Wrapped balance']}
       entries={holders}
       renderEntry={({ account, amount }) => {
         const isCurrentUser = addressesEqual(account, connectedAccount)

@@ -3,11 +3,11 @@ import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 
 function InfoBox({
-  erc20TokenSymbol,
-  wrappedTokenSymbol,
-  totalSuply,
-  wrappedTokenAddress,
   orgTokenAddress,
+  orgTokenSymbol,
+  totalSupply,
+  wrappedTokenAddress,
+  wrappedTokenSymbol,
 }) {
   const theme = useTheme()
 
@@ -21,27 +21,30 @@ function InfoBox({
             justify-content: space-between;
           `}
         >
-          <span>{erc20TokenSymbol}</span>
+          <span>{orgTokenSymbol}</span>
           <span>
             <img src={wrap} />
           </span>
           <span>{wrappedTokenSymbol}</span>
         </h2>
         <p>
-          You can wrap {erc20TokenSymbol} so you can use it within this Aragon
-          organization. You can unwrap it to get back your {erc20TokenSymbol}{' '}
-          tokens it at time.
+          You can wrap {orgTokenSymbol} into a token that can be used within{' '}
+          this Aragon organization for governance. You can unwrap it at any time{' '}
+          to return your original {orgTokenSymbol} tokens.
         </p>
-        <br />
-        <p>
-          1 {erc20TokenSymbol} = 1 {wrappedTokenSymbol}
+        <p
+          css={`
+            margin-top: ${1 * GU}px;
+          `}
+        >
+          1 {orgTokenSymbol} = 1 {wrappedTokenSymbol}
         </p>
       </Box>
       <Box heading="Token Info">
         <ul>
           {[
-            ['Total supply', <strong>{totalSuply}</strong>],
-            ['Transferable', <strong> no</strong>],
+            ['Wrapped supply', totalSupply],
+            ['Transferable', <span css={'text-transform: uppercase'}>no</span>],
             [
               'Token',
               <TokenBadge
@@ -72,9 +75,6 @@ function InfoBox({
                 }
                 > span:nth-child(3) {
                   flex-shrink: 1;
-                }
-                > strong {
-                  text-transform: uppercase;
                 }
               `}
             >

@@ -15,7 +15,7 @@ const WrapTokensPanel = React.memo(
     onAction,
     action,
     info,
-    erc20TokenSymbol,
+    orgTokenSymbol,
     wrappedTokenSymbol,
   }) => {
     return (
@@ -26,7 +26,7 @@ const WrapTokensPanel = React.memo(
       >
         <WrapTokensPanelContent
           action={action}
-          erc20TokenSymbol={erc20TokenSymbol}
+          orgTokenSymbol={orgTokenSymbol}
           info={info}
           onAction={onAction}
           wrappedTokenSymbol={wrappedTokenSymbol}
@@ -38,7 +38,7 @@ const WrapTokensPanel = React.memo(
 
 function WrapTokensPanelContent({
   action,
-  erc20TokenSymbol,
+  orgTokenSymbol,
   info,
   onAction,
   wrappedTokenSymbol,
@@ -78,7 +78,7 @@ function WrapTokensPanelContent({
           min={0}
           max={300}
           onChange={handleAmountChange}
-          adornment={action === 'Wrap' ? erc20TokenSymbol : wrappedTokenSymbol}
+          adornment={action === 'Wrap' ? orgTokenSymbol : wrappedTokenSymbol}
           adornmentPosition="end"
           adornmentSettings={{
             width: 55,
@@ -92,7 +92,7 @@ function WrapTokensPanelContent({
         <TextInput
           value={amount}
           onChange={handleAmountChange}
-          adornment={action === 'Wrap' ? wrappedTokenSymbol : erc20TokenSymbol}
+          adornment={action === 'Wrap' ? wrappedTokenSymbol : orgTokenSymbol}
           adornmentPosition="end"
           adornmentSettings={{
             width: 55,
