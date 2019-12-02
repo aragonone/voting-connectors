@@ -63,7 +63,7 @@ contract ExampleTemplate is TemplateBase {
         TokenWrapper app = TokenWrapper(dao.newAppInstance(appId, latestVersionAppBase(appId)));
         Voting voting = Voting(dao.newAppInstance(votingAppId, latestVersionAppBase(votingAppId)));
 
-        MiniMeToken token = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Org token", 0, "ORG", true);
+        MiniMeToken token = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Org token", 18, "ORG", true);
         token.changeController(app);
 
         // Initialize apps
