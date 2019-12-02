@@ -1,15 +1,11 @@
 import React from 'react'
 import { Button, EmptyStateCard, GU, LoadingRing } from '@aragon/ui'
-import { useAragonApi } from '@aragon/api-react'
-import { useAppLogic } from '../app-logic'
-import Panel from '../components/ActionsPanel'
 import emptyStateImg from '../assets/empty-state.png'
 
-const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
-  const { appState } = useAragonApi()
-  const { erc20TokenSymbol, wrappedTokenSymbol } = appState
-  const { actions, wrapTokensPanel } = useAppLogic()
-
+const NoWrappedTokens = React.memo(function NoWrappedTokens({
+  isSyncing,
+  onWrapTokens,
+}) {
   return (
     <React.Fragment>
       <EmptyStateCard
@@ -41,12 +37,12 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
                 margin: ${3 * GU}px 0;
               `}
             >
-              No tokens here!
+              No wrapped tokens yet!
             </div>
           )
         }
         action={
-          <Button wide mode="strong" onClick={wrapTokensPanel.requestOpen}>
+          <Button wide mode="strong" onClick={onWrapTokens}>
             Wrap token
           </Button>
         }
@@ -57,23 +53,8 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({ isSyncing }) {
               height: 170px;
             `}
             src={emptyStateImg}
-            alt="No tokens here"
+            alt="No wrapped tokens yet"
           />
-        }
-      />
-      <Panel
-        panelState={wrapTokensPanel}
-        onAction={actions.wrapTokens}
-        erc20TokenSymbol={erc20TokenSymbol}
-        wrappedTokenSymbol={wrappedTokenSymbol}
-        action="Wrap"
-        info={
-          'You can wrap ' +
-          erc20TokenSymbol +
-          ' into an ERC20-compliant token that you can use within this organization. 1 ' +
-          erc20TokenSymbol +
-          ' = 1 ' +
-          wrappedTokenSymbol
         }
       />
     </React.Fragment>

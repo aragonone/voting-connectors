@@ -93,7 +93,10 @@ function App() {
               onUnwrapTokens={unwrapTokensPanel.requestOpen}
             />
           ) : (
-            <NoWrappedTokens isSyncing={isSyncing} />
+            <NoWrappedTokens
+              isSyncing={isSyncing}
+              onWrapTokens={wrapTokensPanel.requestOpen}
+            />
           )
         }
         secondary={
