@@ -49,7 +49,7 @@ export function useAppLogic() {
 
   return {
     actions,
-    wrapTokensPanel: useMemo(() => wrapTokensPanel, [wrapTokensPanel]),
-    unwrapTokensPanel: useMemo(() => unwrapTokensPanel, [unwrapTokensPanel]),
+    wrapTokensPanel: wrapTokensPanel,
+    unwrapTokensPanel: unwrapTokensPanel,
   }
 }
