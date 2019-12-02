@@ -117,9 +117,19 @@ function App() {
         wrappedTokenSymbol={wrappedTokenSymbol}
         action="Wrap"
         info={
-          `You can wrap ${orgTokenSymbol} into an ERC20-compliant token that ` +
-          'can be used within this organization for governance. ' +
-          `1 ${orgTokenSymbol} = 1 ${wrappedTokenSymbol}.`
+          <React.Fragment>
+            <p>
+              You can wrap {orgTokenSymbol} into an ERC20-compliant token that
+              can be used within this organization for governance.
+            </p>
+            <p
+              css={`
+                margin-top: ${1 * GU}px;
+              `}
+            >
+              1 {orgTokenSymbol} = 1 {wrappedTokenSymbol}.
+            </p>
+          </React.Fragment>
         }
       />
       <Panel

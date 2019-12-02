@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNetwork } from '@aragon/api-react'
 import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 
@@ -9,6 +10,7 @@ function InfoBox({
   wrappedTokenAddress,
   wrappedTokenSymbol,
 }) {
+  const network = useNetwork()
   const theme = useTheme()
 
   return (
@@ -21,16 +23,49 @@ function InfoBox({
             justify-content: space-between;
           `}
         >
-          <span>{orgTokenSymbol}</span>
+          <TokenBadge
+            compact
+            address={orgTokenAddress}
+            network={network && network.type}
+            symbol={orgTokenSymbol}
+          />
           <span>
             <img src={wrap} />
           </span>
-          <span>{wrappedTokenSymbol}</span>
+          <TokenBadge
+            compact
+            address={wrappedTokenAddress}
+            network={network && network.type}
+            symbol={wrappedTokenSymbol}
+          />
         </h2>
-        <p>
-          You can wrap {orgTokenSymbol} into a token that can be used within{' '}
-          this Aragon organization for governance. You can unwrap it at any time{' '}
-          to return your original {orgTokenSymbol} tokens.
+        <p
+          css={`
+            margin-top: ${1 * GU}px;
+          `}
+        >
+          You can wrap{' '}
+          <TokenBadge
+            compact
+            address={orgTokenAddress}
+            network={network && network.type}
+            symbol={orgTokenSymbol}
+          />{' '}
+          tokens for governance tokens in this Aragon organization.
+        </p>
+        <p
+          css={`
+            margin-top: ${1 * GU}px;
+          `}
+        >
+          You can unwrap{' '}
+          <TokenBadge
+            compact
+            address={wrappedTokenAddress}
+            network={network && network.type}
+            symbol={wrappedTokenSymbol}
+          />{' '}
+          to return your original tokens at any time.
         </p>
         <p
           css={`
@@ -49,6 +84,7 @@ function InfoBox({
               'Token',
               <TokenBadge
                 address={wrappedTokenAddress}
+                network={network && network.type}
                 symbol={wrappedTokenSymbol}
               />,
             ],
