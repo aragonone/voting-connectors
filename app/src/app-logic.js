@@ -1,5 +1,11 @@
-import { useCallback } from 'react'
-import { useApi, useAppState, useCurrentApp } from '@aragon/api-react'
+import React, { useCallback } from 'react'
+import {
+  AragonApi,
+  useApi,
+  useAppState,
+  useCurrentApp,
+} from '@aragon/api-react'
+import appStateReducer from './app-state-reducer'
 import usePanelState from './hooks/usePanelState'
 
 function noop() {}
@@ -60,4 +66,8 @@ export function useAppLogic() {
     wrapTokensPanel: wrapTokensPanel,
     unwrapTokensPanel: unwrapTokensPanel,
   }
+}
+
+export function AppLogicProvider({ children }) {
+  return <AragonApi reducer={appStateReducer}>{children}</AragonApi>
 }

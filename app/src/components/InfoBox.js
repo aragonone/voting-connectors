@@ -3,15 +3,13 @@ import { useNetwork } from '@aragon/api-react'
 import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 
-function InfoBox({
-  orgTokenAddress,
-  orgTokenSymbol,
-  totalSupply,
-  wrappedTokenAddress,
-  wrappedTokenSymbol,
-}) {
+function InfoBox({ orgToken, wrappedToken }) {
   const network = useNetwork()
   const theme = useTheme()
+
+  const totalSupply = orgToken.totalSupply
+    ? orgToken.totalSupply.toString()
+    : '0'
 
   return (
     <React.Fragment>
@@ -25,18 +23,18 @@ function InfoBox({
         >
           <TokenBadge
             compact
-            address={orgTokenAddress}
+            address={orgToken.address}
             network={network && network.type}
-            symbol={orgTokenSymbol}
+            symbol={orgToken.symbol}
           />
           <span>
             <img src={wrap} />
           </span>
           <TokenBadge
             compact
-            address={wrappedTokenAddress}
+            address={wrappedToken.address}
             network={network && network.type}
-            symbol={wrappedTokenSymbol}
+            symbol={wrappedToken.symbol}
           />
         </h2>
         <p
@@ -47,9 +45,9 @@ function InfoBox({
           You can wrap{' '}
           <TokenBadge
             compact
-            address={orgTokenAddress}
+            address={orgToken.address}
             network={network && network.type}
-            symbol={orgTokenSymbol}
+            symbol={orgToken.symbol}
           />{' '}
           tokens for governance tokens in this Aragon organization.
         </p>
@@ -61,9 +59,9 @@ function InfoBox({
           You can unwrap{' '}
           <TokenBadge
             compact
-            address={wrappedTokenAddress}
+            address={wrappedToken.address}
             network={network && network.type}
-            symbol={wrappedTokenSymbol}
+            symbol={wrappedToken.symbol}
           />{' '}
           to return your original tokens at any time.
         </p>
@@ -72,7 +70,7 @@ function InfoBox({
             margin-top: ${1 * GU}px;
           `}
         >
-          1 {orgTokenSymbol} = 1 {wrappedTokenSymbol}
+          1 {orgToken.symbol} = 1 {wrappedToken.symbol}
         </p>
       </Box>
       <Box heading="Token Info">
@@ -83,9 +81,10 @@ function InfoBox({
             [
               'Token',
               <TokenBadge
-                address={wrappedTokenAddress}
+                address={wrappedToken.address}
+                name={wrappedToken.name}
                 network={network && network.type}
-                symbol={wrappedTokenSymbol}
+                symbol={wrappedToken.symbol}
               />,
             ],
           ].map(([label, content], index) => (

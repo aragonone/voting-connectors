@@ -23,25 +23,25 @@ function Holders({ holders, onUnwrapTokens }) {
     <DataView
       fields={['Holder', 'Wrapped balance']}
       entries={holders}
-      renderEntry={({ account, amount }) => {
-        const isCurrentUser = addressesEqual(account, connectedAccount)
+      renderEntry={({ address, balance }) => {
+        const isCurrentUser = addressesEqual(address, connectedAccount)
         return [
           <div>
             <LocalIdentityBadge
-              entity={account}
+              entity={address}
               connectedAccount={isCurrentUser}
             />
             {isCurrentUser && <You />}
           </div>,
           <div>
-            {amount} {wrappedTokenSymbol}
+            {balance.toString()} {wrappedTokenSymbol}
           </div>,
         ]
       }}
-      renderEntryActions={({ account, amount }) => {
-        return [
-          <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />,
-        ]
+      renderEntryActions={({ address }) => {
+        return (
+          <EntryActions address={address} onUnwrapTokens={onUnwrapTokens} />
+        )
       }}
     />
   )
@@ -55,7 +55,7 @@ Holders.defaultProps = {
   holders: [],
 }
 
-function EntryActions({ onUnwrapTokens, address }) {
+function EntryActions({ address, onUnwrapTokens }) {
   const theme = useTheme()
   const connectedAccount = useConnectedAccount()
   const [label, showLocalIdentityModal] = useIdentity(address)
@@ -71,7 +71,7 @@ function EntryActions({ onUnwrapTokens, address }) {
     [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`],
   ]
   return (
-    <ContextMenu>
+    <ContextMenu zIndex={1}>
       {actions.map(([onClick, Icon, label], index) => (
         <ContextMenuItem onClick={onClick} key={index}>
           <span

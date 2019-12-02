@@ -21,6 +21,7 @@
     "@babel/preset-react": "^7.0.0",
     "babel-eslint": "^10.0.1",
     "babel-plugin-styled-components": "^1.10.6",
+    "bn.js": "^5.0.0",
     "copyfiles": "^2.1.1",
     "eslint": "^5.6.0",
     "eslint-config-prettier": "^3.1.0",
