@@ -74,6 +74,8 @@ async function initState(cachedState) {
     ...(await getTokenData(wrappedTokenContract)),
   }
 
+  app.identify(`${initializedState.wrappedToken.symbol}`)
+
   return initializedState
 }
 
