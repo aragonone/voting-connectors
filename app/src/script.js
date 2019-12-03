@@ -1,101 +1,155 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
-import Aragon, { events } from '@aragon/api'
-import BN from 'bn.js'
 
-const TokenBalanceOfABI = require('./abi/token-balanceOf.json')
-const TokenSymbolABI = require('./abi/token-symbol.json')
+import Aragon, { events } from '@aragon/api'
+import { addressesEqual } from './web3-utils'
+import tokenBalanceOfABI from './abi/token-balanceOf.json'
+import tokenDecimalsABI from './abi/token-decimals.json'
+import tokenNameABI from './abi/token-name.json'
+import tokenSymbolABI from './abi/token-symbol.json'
+import tokenTotalSupplyABI from './abi/token-totalSupply.json'
+
+const tokenAbi = [].concat(
+  tokenBalanceOfABI,
+  tokenDecimalsABI,
+  tokenNameABI,
+  tokenSymbolABI,
+  tokenTotalSupplyABI
+)
+const tokenContracts = new Map() // Addr -> External contract
 
 const app = new Aragon()
 
-const initialState = async () => {
-  const orgTokenAddress = await getOrgTokenAddress()
-  const wrappedTokenAddress = await getWrappedTokenAddress()
-  const wrappedTokenSymbol = await getTokenSymbol(wrappedTokenAddress)
-  const erc20TokenSymbol = await getTokenSymbol(orgTokenAddress)
+app.store(
+  async (state, event) => {
+    const { event: eventName } = event
 
-  return {
-    orgTokenAddress,
-    wrappedTokenAddress,
-    wrappedTokenSymbol,
-    erc20TokenSymbol,
-    holders: [],
-  }
-}
-
-const updateHoldersArrayFromLockEvent = async (event, data, state) => {
-  const { entity: account, amount } = data
-  const { holders } = state
-
-  // Identify holder idx from account address.
-  let idx
-  if (holders.length === 0) {
-    idx = -1
-  } else {
-    const accounts = holders.map(holder => holder.account)
-    idx = accounts.indexOf(account)
-  }
-
-  // Push the holder into the array.
-  if (idx === -1) {
-    // New holder
-    holders.push({ account, amount })
-  } else {
-    // Update existing holder balance
-    const holder = holders[idx]
-    const currAmount = new BN(holder.amount)
-    const deltaAmount = new BN(amount)
-    if (event === 'TokensLocked') {
-      holder.amount = currAmount.add(deltaAmount).toString()
-    } else if (event === 'TokensUnlocked') {
-      holder.amount = currAmount.sub(deltaAmount).toString()
+    switch (eventName) {
+      case events.SYNC_STATUS_SYNCING:
+        return { ...state, isSyncing: true }
+      case events.SYNC_STATUS_SYNCED:
+        return { ...state, isSyncing: false }
+      case 'TokensLocked':
+      case 'TokensUnlocked':
+        return updateHolder(state, event)
+      default:
+        return state
     }
-    holders[idx] = holder
+  },
+  { init: initState }
+)
+
+async function initState(cachedState) {
+  const initializedState = {
+    settings: {},
+    ...cachedState,
   }
 
-  return { ...state, holders }
-}
-
-const reducer = async (state, { event, returnValues }) => {
-  let nextState = { ...state }
-  const { orgTokenAddress, wrappedTokenAddress } = state
-
-  switch (event) {
-    case 'TokensLocked':
-    case 'TokensUnlocked':
-      nextState = await updateHoldersArrayFromLockEvent(
-        event,
-        returnValues,
-        state
-      )
-      break
-    case events.SYNC_STATUS_SYNCING:
-      nextState = { ...state, isSyncing: true }
-      break
-    case events.SYNC_STATUS_SYNCED:
-      nextState = { ...state, isSyncing: false }
-      break
+  // App settings
+  const { settings } = initializedState
+  if (!settings.outsideTokenAddress) {
+    settings.outsideTokenAddress = await getOutsideTokenAddress()
+  }
+  if (!settings.wrappedTokenAddress) {
+    settings.wrappedTokenAddress = await getWrappedTokenAddress()
   }
 
-  return nextState
+  // Token contracts
+  const outsideTokenContract = app.external(
+    settings.outsideTokenAddress,
+    tokenAbi
+  )
+  tokenContracts.set(settings.outsideTokenAddress, outsideTokenContract)
+
+  const wrappedTokenContract = app.external(
+    settings.wrappedTokenAddress,
+    tokenAbi
+  )
+  tokenContracts.set(settings.wrappedTokenAddress, wrappedTokenContract)
+
+  // Token data
+  initializedState.outsideToken = {
+    address: settings.outsideTokenAddress,
+    ...(await getTokenData(outsideTokenContract)),
+  }
+  initializedState.wrappedToken = {
+    address: settings.wrappedTokenAddress,
+    ...(await getTokenData(wrappedTokenContract)),
+  }
+
+  app.identify(`${initializedState.wrappedToken.symbol}`)
+
+  return initializedState
 }
 
-app.store(reducer, { init: initialState })
+/***********************
+ *                     *
+ *       Helpers       *
+ *                     *
+ ***********************/
 
-async function getOrgTokenAddress() {
-  return app.call('token').toPromise()
-}
-
-async function getWrappedTokenAddress() {
+async function getOutsideTokenAddress() {
   return app.call('erc20').toPromise()
 }
 
-async function getTokenBalance(tokenAddress, account) {
-  const tokenContract = app.external(tokenAddress, TokenBalanceOfABI)
-  return tokenContract.balanceOf(account).toPromise()
+async function getWrappedTokenAddress() {
+  return app.call('token').toPromise()
 }
 
-async function getTokenSymbol(tokenAddress) {
-  const tokenContract = app.external(tokenAddress, TokenSymbolABI)
-  return tokenContract.symbol().toPromise()
+async function getTokenData(tokenContract) {
+  const [decimals, name, symbol, totalSupply] = await Promise.all([
+    // Decimals, name, and symbol are optional
+    tokenContract
+      .decimals()
+      .toPromise()
+      .catch(_ => '0'),
+    tokenContract
+      .name()
+      .toPromise()
+      .catch(_ => ''),
+    tokenContract
+      .symbol()
+      .toPromise()
+      .catch(_ => ''),
+
+    tokenContract.totalSupply().toPromise(),
+  ])
+
+  return {
+    decimals,
+    name,
+    symbol,
+    totalSupply,
+  }
+}
+
+async function updateHolder(state, event) {
+  const { holders = [], wrappedToken, settings } = state
+  const { entity: account } = event.returnValues
+
+  const holderIndex = holders.findIndex(holder =>
+    addressesEqual(holder.address, account)
+  )
+
+  const wrappedTokenContract = tokenContracts.get(settings.wrappedTokenAddress)
+  const currentBalance = await wrappedTokenContract
+    .balanceOf(account)
+    .toPromise()
+
+  let nextHolders = Array.from(holders)
+  if (holderIndex === -1) {
+    // New holder
+    nextHolders.push({ address: account, balance: currentBalance })
+  } else {
+    nextHolders[holderIndex].balance = currentBalance
+  }
+  // Filter out any addresses that now have no balance
+  nextHolders = nextHolders.filter(({ balance }) => balance !== '0')
+
+  const nextWrappedToken = {
+    ...wrappedToken,
+    totalSupply: await wrappedTokenContract.totalSupply().toPromise(),
+  }
+
+  return { ...state, holders: nextHolders, wrappedToken: nextWrappedToken }
 }

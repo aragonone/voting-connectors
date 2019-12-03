@@ -1,16 +1,22 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
+import React, { useCallback } from 'react'
+import {
+  AragonApi,
+  useApi,
+  useAppState,
+  useCurrentApp,
+} from '@aragon/api-react'
+import appStateReducer from './app-state-reducer'
 import usePanelState from './hooks/usePanelState'
-import useUnwrapPanelState from './hooks/usePanelState'
 
 function noop() {}
 
 // Unwrap tokens action
 export function useUnwrapTokensAction(onDone = noop) {
-  const { api } = useAragonApi()
+  const api = useApi()
   return useCallback(
-    async amount => {
-      await api.unlock(amount).toPromise()
+    amount => {
+      // Don't care about response
+      api.unlock(amount).toPromise()
       onDone()
     },
     [api, onDone]
@@ -19,22 +25,29 @@ export function useUnwrapTokensAction(onDone = noop) {
 
 // Wrap tokens action
 export function useWrapTokensAction(onDone = noop) {
-  const { api, appState } = useAragonApi()
+  const api = useApi()
+  const { outsideToken } = useAppState()
+  const currentApp = useCurrentApp()
   return useCallback(
-    async amount => {
-      const app = (await api.currentApp().toPromise()).appAddress
-      const address = appState.wrappedTokenAddress
+    amount => {
+      if (!currentApp || !outsideToken) {
+        return
+      }
+
+      // Set pre-transaction parameters for approving original token
       const intentParams = {
         token: {
-          address: address,
+          address: outsideToken.address,
           value: amount,
-          spender: app,
+          spender: currentApp.appAddress,
         },
       }
-      await api.lock(amount, intentParams).toPromise()
+
+      // Don't care about response
+      api.lock(amount, intentParams).toPromise()
       onDone()
     },
-    [api, appState, onDone]
+    [api, currentApp, outsideToken, onDone]
   )
 }
 
@@ -50,7 +63,11 @@ export function useAppLogic() {
 
   return {
     actions,
-    wrapTokensPanel: useMemo(() => wrapTokensPanel, [wrapTokensPanel]),
-    unwrapTokensPanel: useMemo(() => unwrapTokensPanel, [unwrapTokensPanel]),
+    wrapTokensPanel: wrapTokensPanel,
+    unwrapTokensPanel: unwrapTokensPanel,
   }
+}
+
+export function AppLogicProvider({ children }) {
+  return <AragonApi reducer={appStateReducer}>{children}</AragonApi>
 }

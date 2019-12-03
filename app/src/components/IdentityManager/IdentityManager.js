@@ -45,28 +45,24 @@ export function useIdentity(address) {
     return modifyLocalIdentity(address).then(() => updates$.next(address))
   }
 
-  React.useEffect(
-    () => {
-      resolveLocalIdentity(address).then(handleNameChange)
+  React.useEffect(() => {
+    resolveLocalIdentity(address).then(handleNameChange)
 
-      const subscription = updates$.subscribe(updatedAddress => {
-        if (updatedAddress.toLowerCase() === address.toLowerCase()) {
-          // Resolve and update state when the identity have been updated.
-          resolveLocalIdentity(address).then(handleNameChange)
-        }
-      })
-      return () => {
-        subscription.unsubscribe()
+    const subscription = updates$.subscribe(updatedAddress => {
+      if (updatedAddress.toLowerCase() === address.toLowerCase()) {
+        // Resolve and update state when the identity have been updated.
+        resolveLocalIdentity(address).then(handleNameChange)
       }
-    },
-    [address, handleNameChange, resolveLocalIdentity, updates$]
-  )
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [address, handleNameChange, resolveLocalIdentity, updates$])
 
   return [name, handleModifyLocalIdentity]
 }
 
 export const IdentityProvider = ({ children }) => {
-  const updates$ = new Subject()
   return (
     <IdentityContext.Provider value={{ updates$ }}>
       {children}

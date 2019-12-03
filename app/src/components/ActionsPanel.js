@@ -1,137 +1,157 @@
-import React from 'react'
-import { Button, GU, Info, Field, SidePanel, TextInput } from '@aragon/ui'
+import React, { useCallback, useMemo, useState } from 'react'
+import {
+  Button,
+  GU,
+  Info,
+  Field,
+  SidePanel,
+  TextInput,
+  useSidePanelFocusOnReady,
+  useTheme,
+} from '@aragon/ui'
+import wrap from '../assets/wrap.svg'
+import { fromDecimals, toDecimals } from '../utils'
 
-const initialState = {
-  amount: '',
-}
+// Any more and the number input field starts to put numbers in scientific notation
+const MAX_INPUT_DECIMAL_BASE = 6
 
 const WrapTokensPanel = React.memo(
-  ({
-    panelState,
-    onAction,
-    action,
-    info,
-    erc20TokenSymbol,
-    wrappedTokenSymbol,
-  }) => {
+  ({ action, info, onAction, outsideToken, panelState, wrappedToken }) => {
     return (
       <SidePanel
         title={action + ' tokens'}
         opened={panelState.visible}
         onClose={panelState.requestClose}
-        onTransitionEnd={panelState.onTransitionEnd}
       >
         <WrapTokensPanelContent
-          onAction={onAction}
           action={action}
           info={info}
-          erc20TokenSymbol={erc20TokenSymbol}
-          wrappedTokenSymbol={wrappedTokenSymbol}
-          panelOpened={panelState.didOpen}
+          onAction={onAction}
+          outsideToken={outsideToken}
+          wrappedToken={wrappedToken}
         />
       </SidePanel>
     )
   }
 )
 
-class WrapTokensPanelContent extends React.PureComponent {
-  static defaultProps = {
-    onAction: () => {},
-  }
-  state = {
-    ...initialState,
-  }
-  componentWillReceiveProps({ panelOpened }) {
-    if (panelOpened && !this.props.panelOpened) {
-      // setTimeout is needed as a small hack to wait until the input's on
-      // screen until we call focus
-      this.amountInput && setTimeout(() => this.amountInput.focus(), 0)
-    } else if (!panelOpened && this.props.panelOpened) {
-      // Finished closing the panel, so reset its state
-      this.setState({ ...initialState })
-    }
-  }
-  handleAmountChange = event => {
-    this.setState({ amount: event.target.value })
-  }
+function WrapTokensPanelContent({
+  action,
+  info,
+  onAction,
+  outsideToken,
+  wrappedToken,
+}) {
+  const theme = useTheme()
 
-  handleSubmit = event => {
-    event.preventDefault()
-    this.props.onAction(this.state.amount)
-  }
-  render() {
-    const { amount } = this.state
+  const [amount, setAmount] = useState('')
+  const tokenInputRef = useSidePanelFocusOnReady()
 
-    return (
-      <div>
-        <form
-          css={`
-            margin-top: ${3 * GU}px;
-          `}
-          onSubmit={this.handleSubmit}
-        >
+  const tokenData = useMemo(
+    () => (action === 'Wrap' ? outsideToken : wrappedToken),
+    [action, outsideToken, wrappedToken]
+  )
+  const handleAmountChange = useCallback(event => {
+    setAmount(event.target.value)
+  }, [])
+  const handleSubmit = useCallback(
+    event => {
+      event.preventDefault()
+
+      onAction(toDecimals(amount.trim(), tokenData.numDecimals))
+    },
+    [amount, onAction, tokenData]
+  )
+
+  const tokenStep = fromDecimals(
+    '1',
+    Math.min(MAX_INPUT_DECIMAL_BASE, tokenData.numDecimals)
+  )
+
+  return (
+    <form
+      css={`
+        margin-top: ${3 * GU}px;
+      `}
+      onSubmit={handleSubmit}
+    >
+      <div
+        css={`
+          margin-bottom: ${3 * GU}px;
+        `}
+      >
+        <Info>{info}</Info>
+      </div>
+      <Field label={action === 'Wrap' ? 'Amount' : 'Wrapped token amount'}>
+        <div css="display: flex">
+          <TextInput
+            ref={tokenInputRef}
+            type="number"
+            value={amount}
+            min={tokenStep}
+            step={tokenStep}
+            onChange={handleAmountChange}
+            adornment={
+              action === 'Wrap' ? outsideToken.symbol : wrappedToken.symbol
+            }
+            adornmentPosition="end"
+            adornmentSettings={{
+              width: 60,
+              padding: 8,
+            }}
+            required
+            wide
+            css={`
+              &::-webkit-inner-spin-button,
+              &::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+              }
+            `}
+          />
           <div
             css={`
-              margin-bottom: ${3 * GU}px;
+              display: flex;
+              flex-shrink: 0;
+              align-items: center;
             `}
           >
-            <Info>{this.props.info}</Info>
+            <img
+              src={wrap}
+              css={`
+                margin: 0 ${2 * GU}px;
+              `}
+            />
+            <span
+              css={`
+                color: ${theme.surfaceContentSecondary};
+                margin-right: ${0.5 * GU}px;
+                min-width: ${6 * GU}px;
+                max-width: ${12 * GU}px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                text-align: right;
+              `}
+            >
+              {amount || 0}
+            </span>
+            <span
+              css={`
+                color: ${theme.surfaceContentSecondary};
+              `}
+            >
+              {action === 'Wrap' ? wrappedToken.symbol : outsideToken.symbol}
+            </span>
           </div>
-          <Field
-            label={
-              this.props.action == 'Wrap' ? 'Amount' : 'Wrapped token amount'
-            }
-          >
-            <TextInput
-              ref={amount => (this.amountInput = amount)}
-              value={amount}
-              min={0}
-              max={300}
-              onChange={this.handleAmountChange}
-              adornment={
-                this.props.action == 'Wrap'
-                  ? this.props.erc20TokenSymbol
-                  : this.props.wrappedTokenSymbol
-              }
-              adornmentPosition="end"
-              adornmentSettings={{
-                width: 55,
-                padding: 8,
-              }}
-              required
-              wide
-            />
-          </Field>
-          <Field
-            label={
-              this.props.action == 'Wrap' ? 'Wrapped token amount' : 'Amount'
-            }
-          >
-            <TextInput
-              ref={amount => (this.amountInput = amount)}
-              value={amount}
-              onChange={this.handleAmountChange}
-              adornment={
-                this.props.action == 'Wrap'
-                  ? this.props.wrappedTokenSymbol
-                  : this.props.erc20TokenSymbol
-              }
-              adornmentPosition="end"
-              adornmentSettings={{
-                width: 55,
-                padding: 8,
-              }}
-              required
-              wide
-            />
-          </Field>
-          <Button disabled={!amount} mode="strong" type="submit" wide>
-            {this.props.action + ' tokens'}
-          </Button>
-        </form>
-      </div>
-    )
-  }
+        </div>
+      </Field>
+      <Button disabled={!amount} mode="strong" type="submit" wide>
+        {action} tokens
+      </Button>
+    </form>
+  )
+}
+WrapTokensPanelContent.defaultProps = {
+  onAction: () => {},
 }
 
 export default WrapTokensPanel

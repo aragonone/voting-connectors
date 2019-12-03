@@ -1,6 +1,5 @@
-import React, { useMemo, useCallback } from 'react'
+import React, { useCallback } from 'react'
 import PropTypes from 'prop-types'
-import BN from 'bn.js'
 import {
   ContextMenu,
   ContextMenuItem,
@@ -8,50 +7,55 @@ import {
   IconLabel,
   IconRemove,
   GU,
-  useLayout,
   useTheme,
-  IdentityBadge,
 } from '@aragon/ui'
-import { useAragonApi, useConnectedAccount } from '@aragon/api-react'
+import { useConnectedAccount } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 import You from '../components/You'
 import { useIdentity } from '../components/IdentityManager/IdentityManager'
+import { formatBalance } from '../utils'
 import { addressesEqual } from '../web3-utils'
 
-function Holders({ holders, onUnwrapTokens }) {
-  const { layoutName } = useLayout()
-  const compact = layoutName === 'small'
+const Holders = React.memo(function Holders({
+  holders,
+  onUnwrapTokens,
+  wrappedToken,
+}) {
   const connectedAccount = useConnectedAccount()
-  const { appState } = useAragonApi()
-  const { wrappedTokenSymbol } = appState
+  const holderEntries = holders
+    .map(holder => ({
+      ...holder,
+      isConnectedAccount: addressesEqual(holder.address, connectedAccount),
+    }))
+    .sort((a, b) => (a.isConnectedAccount ? -1 : b.isConnectedAccount ? 1 : 0))
 
   return (
     <DataView
-      fields={['Holder', 'Wrapped tokens balance']}
-      entries={holders}
-      renderEntry={({ account, amount }) => {
-        const isCurrentUser = addressesEqual(account, connectedAccount)
+      fields={['Holder', 'Wrapped balance']}
+      entries={holderEntries}
+      renderEntry={({ address, balance, isConnectedAccount }) => {
         return [
           <div>
             <LocalIdentityBadge
-              entity={account}
-              connectedAccount={isCurrentUser}
+              entity={address}
+              connectedAccount={isConnectedAccount}
             />
-            {isCurrentUser && <You />}
+            {isConnectedAccount && <You />}
           </div>,
           <div>
-            {amount} {wrappedTokenSymbol}
+            {formatBalance(balance, wrappedToken.tokenDecimalsBase)}{' '}
+            {wrappedToken.symbol}
           </div>,
         ]
       }}
-      renderEntryActions={({ account, amount }) => {
-        return [
-          <EntryActions onUnwrapTokens={onUnwrapTokens} address={account} />,
-        ]
+      renderEntryActions={({ address }) => {
+        return (
+          <EntryActions address={address} onUnwrapTokens={onUnwrapTokens} />
+        )
       }}
     />
   )
-}
+})
 
 Holders.propTypes = {
   holders: PropTypes.array,
@@ -61,7 +65,7 @@ Holders.defaultProps = {
   holders: [],
 }
 
-function EntryActions({ onUnwrapTokens, address }) {
+function EntryActions({ address, onUnwrapTokens }) {
   const theme = useTheme()
   const connectedAccount = useConnectedAccount()
   const [label, showLocalIdentityModal] = useIdentity(address)
@@ -77,7 +81,7 @@ function EntryActions({ onUnwrapTokens, address }) {
     [editLabel, IconLabel, `${label ? 'Edit' : 'Add'} custom label`],
   ]
   return (
-    <ContextMenu>
+    <ContextMenu zIndex={1}>
       {actions.map(([onClick, Icon, label], index) => (
         <ContextMenuItem onClick={onClick} key={index}>
           <span

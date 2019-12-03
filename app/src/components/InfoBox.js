@@ -1,23 +1,19 @@
-import React, { useMemo } from 'react'
-import { useConnectedAccount, useNetwork } from '@aragon/api-react'
-import {
-  Box,
-  Distribution,
-  GU,
-  TokenBadge,
-  useTheme,
-  textStyle,
-} from '@aragon/ui'
+import React from 'react'
+import { useNetwork } from '@aragon/api-react'
+import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
+import { fromDecimals } from '../utils'
 
-function InfoBox({
-  erc20TokenSymbol,
-  wrappedTokenSymbol,
-  totalSuply,
-  wrappedTokenAddress,
-  orgTokenAddress,
-}) {
+function InfoBox({ outsideToken, wrappedToken }) {
+  const network = useNetwork()
   const theme = useTheme()
+
+  const totalSupply = wrappedToken.totalSupply
+    ? fromDecimals(
+        wrappedToken.totalSupply.toString(),
+        wrappedToken.numDecimals
+      )
+    : '0'
 
   return (
     <React.Fragment>
@@ -29,32 +25,77 @@ function InfoBox({
             justify-content: space-between;
           `}
         >
-          <span>{erc20TokenSymbol}</span>
+          <TokenBadge
+            compact
+            address={outsideToken.address}
+            network={network && network.type}
+            symbol={outsideToken.symbol}
+          />
           <span>
             <img src={wrap} />
           </span>
-          <span>{wrappedTokenSymbol}</span>
+          <TokenBadge
+            compact
+            address={wrappedToken.address}
+            network={network && network.type}
+            symbol={wrappedToken.symbol}
+          />
         </h2>
-        <p>
-          You can wrap {erc20TokenSymbol} so you can use it within this Aragon
-          organization. You can unwrap it to get back your {erc20TokenSymbol}{' '}
-          tokens it at time.
+        <p
+          css={`
+            margin-top: ${1 * GU}px;
+          `}
+        >
+          You can wrap{' '}
+          <TokenBadge
+            compact
+            address={outsideToken.address}
+            network={network && network.type}
+            symbol={outsideToken.symbol}
+          />{' '}
+          tokens for{' '}
+          <TokenBadge
+            compact
+            address={wrappedToken.address}
+            network={network && network.type}
+            symbol={wrappedToken.symbol}
+          />{' '}
+          tokens used in this organization for governance.
         </p>
-        <br />
-        <p>
-          1 {erc20TokenSymbol} = 1 {wrappedTokenSymbol}
+        <p
+          css={`
+            margin-top: ${1 * GU}px;
+          `}
+        >
+          You can unwrap{' '}
+          <TokenBadge
+            compact
+            address={wrappedToken.address}
+            network={network && network.type}
+            symbol={wrappedToken.symbol}
+          />{' '}
+          at any time to return your original tokens.
+        </p>
+        <p
+          css={`
+            margin-top: ${1 * GU}px;
+          `}
+        >
+          1 {outsideToken.symbol} = 1 {wrappedToken.symbol}
         </p>
       </Box>
       <Box heading="Token Info">
         <ul>
           {[
-            ['Total supply', <strong>{totalSuply}</strong>],
-            ['Transferable', <strong> no</strong>],
+            ['Wrapped supply', totalSupply],
+            ['Transferable', <span css={'text-transform: uppercase'}>no</span>],
             [
               'Token',
               <TokenBadge
-                address={wrappedTokenAddress}
-                symbol={wrappedTokenSymbol}
+                address={wrappedToken.address}
+                name={wrappedToken.name}
+                network={network && network.type}
+                symbol={wrappedToken.symbol}
               />,
             ],
           ].map(([label, content], index) => (
@@ -80,9 +121,6 @@ function InfoBox({
                 }
                 > span:nth-child(3) {
                   flex-shrink: 1;
-                }
-                > strong {
-                  text-transform: uppercase;
                 }
               `}
             >
