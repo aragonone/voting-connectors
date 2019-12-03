@@ -57,7 +57,7 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
     }
 
     /**
-     * @notice Lock `_amount` tokens
+     * @notice Lock `@tokenAmount(self.erc20(): address, _amount, false)` tokens
      */
     function lock(uint256 _amount) external {
         require(_amount > 0, ERROR_LOCK_AMOUNT_ZERO);
@@ -70,7 +70,7 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
     }
 
     /**
-     * @notice Unlock `_amount` tokens
+     * @notice Unlock `@tokenAmount(self.erc20(): address, _amount, false)` tokens
      */
     function unlock(uint256 _amount) external {
         require(_amount > 0, ERROR_UNLOCK_AMOUNT_ZERO);
