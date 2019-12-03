@@ -16,22 +16,31 @@ import { useIdentity } from '../components/IdentityManager/IdentityManager'
 import { formatBalance } from '../utils'
 import { addressesEqual } from '../web3-utils'
 
-function Holders({ holders, onUnwrapTokens, wrappedToken }) {
+const Holders = React.memo(function Holders({
+  holders,
+  onUnwrapTokens,
+  wrappedToken,
+}) {
   const connectedAccount = useConnectedAccount()
+  const holderEntries = holders
+    .map(holder => ({
+      ...holder,
+      isConnectedAccount: addressesEqual(holder.address, connectedAccount),
+    }))
+    .sort((a, b) => (a.isConnectedAccount ? -1 : b.isConnectedAccount ? 1 : 0))
 
   return (
     <DataView
       fields={['Holder', 'Wrapped balance']}
-      entries={holders}
-      renderEntry={({ address, balance }) => {
-        const isCurrentUser = addressesEqual(address, connectedAccount)
+      entries={holderEntries}
+      renderEntry={({ address, balance, isConnectedAccount }) => {
         return [
           <div>
             <LocalIdentityBadge
               entity={address}
-              connectedAccount={isCurrentUser}
+              connectedAccount={isConnectedAccount}
             />
-            {isCurrentUser && <You />}
+            {isConnectedAccount && <You />}
           </div>,
           <div>
             {formatBalance(balance, wrappedToken.tokenDecimalsBase)}{' '}
@@ -46,7 +55,7 @@ function Holders({ holders, onUnwrapTokens, wrappedToken }) {
       }}
     />
   )
-}
+})
 
 Holders.propTypes = {
   holders: PropTypes.array,
