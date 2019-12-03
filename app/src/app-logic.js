@@ -26,18 +26,18 @@ export function useUnwrapTokensAction(onDone = noop) {
 // Wrap tokens action
 export function useWrapTokensAction(onDone = noop) {
   const api = useApi()
-  const { wrappedTokenAddress } = useAppState()
+  const { outsideToken } = useAppState()
   const currentApp = useCurrentApp()
   return useCallback(
     amount => {
-      if (!currentApp) {
+      if (!currentApp || !outsideToken) {
         return
       }
 
       // Set pre-transaction parameters for approving original token
       const intentParams = {
         token: {
-          address: wrappedTokenAddress,
+          address: outsideToken.address,
           value: amount,
           spender: currentApp.appAddress,
         },
@@ -47,7 +47,7 @@ export function useWrapTokensAction(onDone = noop) {
       api.lock(amount, intentParams).toPromise()
       onDone()
     },
-    [api, currentApp, wrappedTokenAddress, onDone]
+    [api, currentApp, outsideToken, onDone]
   )
 }
 

@@ -47,16 +47,19 @@ async function initState(cachedState) {
 
   // App settings
   const { settings } = initializedState
-  if (!settings.orgTokenAddress) {
-    settings.orgTokenAddress = await getOrgTokenAddress()
+  if (!settings.outsideTokenAddress) {
+    settings.outsideTokenAddress = await getOutsideTokenAddress()
   }
   if (!settings.wrappedTokenAddress) {
     settings.wrappedTokenAddress = await getWrappedTokenAddress()
   }
 
   // Token contracts
-  const orgTokenContract = app.external(settings.orgTokenAddress, tokenAbi)
-  tokenContracts.set(settings.orgTokenAddress, orgTokenContract)
+  const outsideTokenContract = app.external(
+    settings.outsideTokenAddress,
+    tokenAbi
+  )
+  tokenContracts.set(settings.outsideTokenAddress, outsideTokenContract)
 
   const wrappedTokenContract = app.external(
     settings.wrappedTokenAddress,
@@ -65,9 +68,9 @@ async function initState(cachedState) {
   tokenContracts.set(settings.wrappedTokenAddress, wrappedTokenContract)
 
   // Token data
-  initializedState.orgToken = {
-    address: settings.orgTokenAddress,
-    ...(await getTokenData(orgTokenContract)),
+  initializedState.outsideToken = {
+    address: settings.outsideTokenAddress,
+    ...(await getTokenData(outsideTokenContract)),
   }
   initializedState.wrappedToken = {
     address: settings.wrappedTokenAddress,
@@ -85,12 +88,12 @@ async function initState(cachedState) {
  *                     *
  ***********************/
 
-async function getOrgTokenAddress() {
-  return app.call('token').toPromise()
+async function getOutsideTokenAddress() {
+  return app.call('erc20').toPromise()
 }
 
 async function getWrappedTokenAddress() {
-  return app.call('erc20').toPromise()
+  return app.call('token').toPromise()
 }
 
 async function getTokenData(tokenContract) {
@@ -121,15 +124,17 @@ async function getTokenData(tokenContract) {
 }
 
 async function updateHolder(state, event) {
-  const { holders = [], orgToken, settings } = state
+  const { holders = [], wrappedToken, settings } = state
   const { entity: account } = event.returnValues
 
   const holderIndex = holders.findIndex(holder =>
     addressesEqual(holder.address, account)
   )
 
-  const orgTokenContract = tokenContracts.get(settings.orgTokenAddress)
-  const currentBalance = await orgTokenContract.balanceOf(account).toPromise()
+  const wrappedTokenContract = tokenContracts.get(settings.wrappedTokenAddress)
+  const currentBalance = await wrappedTokenContract
+    .balanceOf(account)
+    .toPromise()
 
   const nextHolders = Array.from(holders)
   if (holderIndex === -1) {
@@ -139,10 +144,10 @@ async function updateHolder(state, event) {
     nextHolders[holderIndex].balance = currentBalance
   }
 
-  const nextOrgToken = {
-    ...orgToken,
-    totalSupply: await orgTokenContract.totalSupply().toPromise(),
+  const nextWrappedToken = {
+    ...wrappedToken,
+    totalSupply: await wrappedTokenContract.totalSupply().toPromise(),
   }
 
-  return { ...state, holders: nextHolders, orgToken: nextOrgToken }
+  return { ...state, holders: nextHolders, wrappedToken: nextWrappedToken }
 }

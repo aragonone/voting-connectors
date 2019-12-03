@@ -21,12 +21,12 @@ import { IdentityProvider } from './components/IdentityManager/IdentityManager'
 
 function App() {
   const { appState } = useAragonApi()
-  const { holders, isSyncing, orgToken, wrappedToken } = appState
+  const { holders, isSyncing, outsideToken, wrappedToken } = appState
   const { actions, wrapTokensPanel, unwrapTokensPanel } = useAppLogic()
   const { layoutName } = useLayout()
   const theme = useTheme()
 
-  const appStateReady = orgToken && wrappedToken
+  const appStateReady = outsideToken && wrappedToken
   const showHolders = appStateReady && holders && holders.length > 0
 
   return (
@@ -80,6 +80,7 @@ function App() {
             <Holders
               holders={holders}
               onUnwrapTokens={unwrapTokensPanel.requestOpen}
+              wrappedToken={wrappedToken}
             />
           ) : (
             <NoWrappedTokens
@@ -90,7 +91,7 @@ function App() {
         }
         secondary={
           appStateReady && (
-            <InfoBox orgToken={orgToken} wrappedToken={wrappedToken} />
+            <InfoBox outsideToken={outsideToken} wrappedToken={wrappedToken} />
           )
         }
       />
@@ -100,21 +101,21 @@ function App() {
           <Panel
             panelState={wrapTokensPanel}
             onAction={actions.wrapTokens}
-            orgToken={orgToken}
+            outsideToken={outsideToken}
             wrappedToken={wrappedToken}
             action="Wrap"
             info={
               <React.Fragment>
                 <p>
-                  You can wrap {orgToken.symbol} into an ERC20-compliant token
-                  that can be used within this organization for governance.
+                  Wrap {outsideToken.symbol} into an ERC20-compliant token used
+                  for governance within this organization.
                 </p>
                 <p
                   css={`
                     margin-top: ${1 * GU}px;
                   `}
                 >
-                  1 {orgToken.symbol} = 1 {wrappedToken.symbol}.
+                  1 {outsideToken.symbol} = 1 {wrappedToken.symbol}.
                 </p>
               </React.Fragment>
             }
@@ -122,13 +123,10 @@ function App() {
           <Panel
             panelState={unwrapTokensPanel}
             onAction={actions.unwrapTokens}
-            orgToken={orgToken}
+            outsideToken={outsideToken}
             wrappedToken={wrappedToken}
             action="Unwrap"
-            info={
-              'You can easily unwrap your wrapped tokens ' +
-              `(${wrappedToken.symbol}) to recover your ${orgToken.symbol}.`
-            }
+            info={`Recover your ${outsideToken.symbol} by unwrapping your ${wrappedToken.symbol}.`}
           />
         </React.Fragment>
       )}

@@ -3,12 +3,12 @@ import { useNetwork } from '@aragon/api-react'
 import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 
-function InfoBox({ orgToken, wrappedToken }) {
+function InfoBox({ outsideToken, wrappedToken }) {
   const network = useNetwork()
   const theme = useTheme()
 
-  const totalSupply = orgToken.totalSupply
-    ? orgToken.totalSupply.toString()
+  const totalSupply = wrappedToken.totalSupply
+    ? wrappedToken.totalSupply.toString()
     : '0'
 
   return (
@@ -23,9 +23,9 @@ function InfoBox({ orgToken, wrappedToken }) {
         >
           <TokenBadge
             compact
-            address={orgToken.address}
+            address={outsideToken.address}
             network={network && network.type}
-            symbol={orgToken.symbol}
+            symbol={outsideToken.symbol}
           />
           <span>
             <img src={wrap} />
@@ -45,9 +45,9 @@ function InfoBox({ orgToken, wrappedToken }) {
           You can wrap{' '}
           <TokenBadge
             compact
-            address={orgToken.address}
+            address={outsideToken.address}
             network={network && network.type}
-            symbol={orgToken.symbol}
+            symbol={outsideToken.symbol}
           />{' '}
           tokens for governance tokens in this Aragon organization.
         </p>
@@ -70,7 +70,7 @@ function InfoBox({ orgToken, wrappedToken }) {
             margin-top: ${1 * GU}px;
           `}
         >
-          1 {orgToken.symbol} = 1 {wrappedToken.symbol}
+          1 {outsideToken.symbol} = 1 {wrappedToken.symbol}
         </p>
       </Box>
       <Box heading="Token Info">

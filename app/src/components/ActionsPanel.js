@@ -12,7 +12,7 @@ import {
 import wrap from '../assets/wrap.svg'
 
 const WrapTokensPanel = React.memo(
-  ({ action, info, onAction, orgToken, panelState, wrappedToken }) => {
+  ({ action, info, onAction, outsideToken, panelState, wrappedToken }) => {
     return (
       <SidePanel
         title={action + ' tokens'}
@@ -23,7 +23,7 @@ const WrapTokensPanel = React.memo(
           action={action}
           info={info}
           onAction={onAction}
-          orgToken={orgToken}
+          outsideToken={outsideToken}
           wrappedToken={wrappedToken}
         />
       </SidePanel>
@@ -35,7 +35,7 @@ function WrapTokensPanelContent({
   action,
   info,
   onAction,
-  orgToken,
+  outsideToken,
   wrappedToken,
 }) {
   const theme = useTheme()
@@ -78,7 +78,7 @@ function WrapTokensPanelContent({
             max={300}
             onChange={handleAmountChange}
             adornment={
-              action === 'Wrap' ? orgToken.symbol : wrappedToken.symbol
+              action === 'Wrap' ? outsideToken.symbol : wrappedToken.symbol
             }
             adornmentPosition="end"
             adornmentSettings={{
@@ -125,7 +125,7 @@ function WrapTokensPanelContent({
                 color: ${theme.surfaceContentSecondary};
               `}
             >
-              {action === 'Wrap' ? wrappedToken.symbol : orgToken.symbol}
+              {action === 'Wrap' ? wrappedToken.symbol : outsideToken.symbol}
             </span>
           </div>
         </div>
