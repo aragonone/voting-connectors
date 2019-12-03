@@ -53,7 +53,14 @@ function InfoBox({ outsideToken, wrappedToken }) {
             network={network && network.type}
             symbol={outsideToken.symbol}
           />{' '}
-          tokens for governance tokens in this Aragon organization.
+          tokens for{' '}
+          <TokenBadge
+            compact
+            address={wrappedToken.address}
+            network={network && network.type}
+            symbol={wrappedToken.symbol}
+          />{' '}
+          tokens used in this organization for governance.
         </p>
         <p
           css={`
@@ -67,7 +74,7 @@ function InfoBox({ outsideToken, wrappedToken }) {
             network={network && network.type}
             symbol={wrappedToken.symbol}
           />{' '}
-          to return your original tokens at any time.
+          at any time to return your original tokens.
         </p>
         <p
           css={`
