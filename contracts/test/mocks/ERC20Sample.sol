@@ -6,6 +6,7 @@ import "@aragon/os/contracts/lib/token/ERC20.sol";
 contract ERC20Sample is ERC20 {
     string public name = "Sample token";
     string public symbol = "SPL";
+    uint8 public decimals = 18;
 
     uint256 public _totalSupply = 1e6 * 10**18;
     mapping(address => uint256) private balances;
