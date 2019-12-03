@@ -7,7 +7,9 @@ import {
   SidePanel,
   TextInput,
   useSidePanelFocusOnReady,
+  useTheme,
 } from '@aragon/ui'
+import wrap from '../assets/wrap.svg'
 
 const WrapTokensPanel = React.memo(
   ({
@@ -43,6 +45,8 @@ function WrapTokensPanelContent({
   onAction,
   wrappedTokenSymbol,
 }) {
+  const theme = useTheme()
+
   const [amount, setAmount] = useState('')
   const tokenInputRef = useSidePanelFocusOnReady()
 
@@ -72,38 +76,67 @@ function WrapTokensPanelContent({
         <Info>{info}</Info>
       </div>
       <Field label={action === 'Wrap' ? 'Amount' : 'Wrapped token amount'}>
-        <TextInput
-          ref={tokenInputRef}
-          value={amount}
-          min={0}
-          max={300}
-          onChange={handleAmountChange}
-          adornment={action === 'Wrap' ? orgTokenSymbol : wrappedTokenSymbol}
-          adornmentPosition="end"
-          adornmentSettings={{
-            width: 55,
-            padding: 8,
-          }}
-          required
-          wide
-        />
-      </Field>
-      <Field label={action === 'Wrap' ? 'Wrapped token amount' : 'Amount'}>
-        <TextInput
-          value={amount}
-          onChange={handleAmountChange}
-          adornment={action === 'Wrap' ? wrappedTokenSymbol : orgTokenSymbol}
-          adornmentPosition="end"
-          adornmentSettings={{
-            width: 55,
-            padding: 8,
-          }}
-          required
-          wide
-        />
+        <div css="display: flex">
+          <TextInput
+            ref={tokenInputRef}
+            type="number"
+            value={amount}
+            min={0}
+            max={300}
+            onChange={handleAmountChange}
+            adornment={action === 'Wrap' ? orgTokenSymbol : wrappedTokenSymbol}
+            adornmentPosition="end"
+            adornmentSettings={{
+              width: 60,
+              padding: 8,
+            }}
+            required
+            wide
+            css={`
+              &::-webkit-inner-spin-button,
+              &::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+              }
+            `}
+          />
+          <div
+            css={`
+              display: flex;
+              flex-shrink: 0;
+              align-items: center;
+            `}
+          >
+            <img
+              src={wrap}
+              css={`
+                margin: 0 ${2 * GU}px;
+              `}
+            />
+            <span
+              css={`
+                color: ${theme.surfaceContentSecondary};
+                margin-right: ${0.5 * GU}px;
+                min-width: ${6 * GU}px;
+                max-width: ${12 * GU}px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                text-align: right;
+              `}
+            >
+              {amount || 0}
+            </span>
+            <span
+              css={`
+                color: ${theme.surfaceContentSecondary};
+              `}
+            >
+              {action === 'Wrap' ? wrappedTokenSymbol : orgTokenSymbol}
+            </span>
+          </div>
+        </div>
       </Field>
       <Button disabled={!amount} mode="strong" type="submit" wide>
-        {action + ' tokens'}
+        {action} tokens
       </Button>
     </form>
   )
