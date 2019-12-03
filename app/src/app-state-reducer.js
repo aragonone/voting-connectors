@@ -6,6 +6,7 @@ function transformTokenData(tokenData) {
     ...tokenData,
     decimals: new BN(decimals),
     numDecimals: parseInt(decimals, 10),
+    tokenDecimalsBase: new BN(10).pow(new BN(decimals)),
     totalSupply: new BN(totalSupply),
   }
 }

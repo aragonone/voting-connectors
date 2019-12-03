@@ -136,13 +136,15 @@ async function updateHolder(state, event) {
     .balanceOf(account)
     .toPromise()
 
-  const nextHolders = Array.from(holders)
+  let nextHolders = Array.from(holders)
   if (holderIndex === -1) {
     // New holder
     nextHolders.push({ address: account, balance: currentBalance })
   } else {
     nextHolders[holderIndex].balance = currentBalance
   }
+  // Filter out any addresses that now have no balance
+  nextHolders = nextHolders.filter(({ balance }) => balance !== '0')
 
   const nextWrappedToken = {
     ...wrappedToken,

@@ -2,13 +2,17 @@ import React from 'react'
 import { useNetwork } from '@aragon/api-react'
 import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
+import { fromDecimals } from '../utils'
 
 function InfoBox({ outsideToken, wrappedToken }) {
   const network = useNetwork()
   const theme = useTheme()
 
   const totalSupply = wrappedToken.totalSupply
-    ? wrappedToken.totalSupply.toString()
+    ? fromDecimals(
+        wrappedToken.totalSupply.toString(),
+        wrappedToken.numDecimals
+      )
     : '0'
 
   return (

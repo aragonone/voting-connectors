@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   Button,
   GU,
@@ -10,6 +10,10 @@ import {
   useTheme,
 } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
+import { fromDecimals, toDecimals } from '../utils'
+
+// Any more and the number input field starts to put numbers in scientific notation
+const MAX_INPUT_DECIMAL_BASE = 6
 
 const WrapTokensPanel = React.memo(
   ({ action, info, onAction, outsideToken, panelState, wrappedToken }) => {
@@ -43,15 +47,25 @@ function WrapTokensPanelContent({
   const [amount, setAmount] = useState('')
   const tokenInputRef = useSidePanelFocusOnReady()
 
+  const tokenData = useMemo(
+    () => (action === 'Wrap' ? outsideToken : wrappedToken),
+    [action, outsideToken, wrappedToken]
+  )
   const handleAmountChange = useCallback(event => {
     setAmount(event.target.value)
   }, [])
   const handleSubmit = useCallback(
     event => {
       event.preventDefault()
-      onAction(amount)
+
+      onAction(toDecimals(amount.trim(), tokenData.numDecimals))
     },
-    [amount, onAction]
+    [amount, onAction, tokenData]
+  )
+
+  const tokenStep = fromDecimals(
+    '1',
+    Math.min(MAX_INPUT_DECIMAL_BASE, tokenData.numDecimals)
   )
 
   return (
@@ -74,8 +88,8 @@ function WrapTokensPanelContent({
             ref={tokenInputRef}
             type="number"
             value={amount}
-            min={0}
-            max={300}
+            min={tokenStep}
+            step={tokenStep}
             onChange={handleAmountChange}
             adornment={
               action === 'Wrap' ? outsideToken.symbol : wrappedToken.symbol
