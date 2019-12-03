@@ -6,8 +6,8 @@ pragma solidity 0.4.24;
 
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/os/contracts/common/IForwarder.sol";
+import "@aragon/os/contracts/common/SafeERC20.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
-import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@aragon/apps-shared-minime/contracts/ITokenController.sol";
 
@@ -17,13 +17,13 @@ import "@aragon/apps-shared-minime/contracts/ITokenController.sol";
  * @dev Based on https://github.com/MyBitFoundation/MyBit-DAO.tech/blob/master/apps/MyTokens/contracts/MyTokens.sol
  */
 contract TokenWrapper is ITokenController, IForwarder, AragonApp {
-    using SafeMath for uint256;
+    using SafeERC20 for ERC20;
 
     string private constant ERROR_CAN_NOT_FORWARD = "TW_CAN_NOT_FORWARD";
     string private constant ERROR_CALLER_NOT_TOKEN = "TW_CALLER_NOT_TOKEN";
-    string private constant ERROR_LOCK_AMOUNT_ZERO = "TW_LOCK_AMOUNT_ZERO";
-    string private constant ERROR_UNLOCK_AMOUNT_ZERO = "TW_UNLOCK_AMOUNT_ZERO";
-    string private constant ERROR_INVALID_UNLOCK_AMOUNT = "TW_INVALID_UNLOCK_AMOUNT";
+    string private constant ERROR_DEPOSIT_AMOUNT_ZERO = "TW_DEPOSIT_AMOUNT_ZERO";
+    string private constant ERROR_WITHDRAW_AMOUNT_ZERO = "TW_WITHDRAW_AMOUNT_ZERO";
+    string private constant ERROR_INVALID_WITHDRAW_AMOUNT = "TW_INVALID_WITHDRAW_AMOUNT";
     string private constant ERROR_INVALID_TOKEN_CONTROLLER = "TW_INVALID_TOKEN_CONTROLLER";
     string private constant ERROR_TOKEN_BURN_FAILED = "TW_TOKEN_BURN_FAILED";
     string private constant ERROR_TOKEN_MINT_FAILED = "TW_TOKEN_MINT_FAILED";
@@ -32,10 +32,9 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
 
     ERC20 public erc20;
     MiniMeToken public token;
-    mapping(address => uint256) internal lockedAmount;
 
-    event TokensLocked(address entity, uint256 amount);
-    event TokensUnlocked(address entity, uint256 amount);
+    event Deposit(address indexed entity, uint256 amount);
+    event Withdrawal(address indexed entity, uint256 amount);
 
     modifier onlyToken() {
         require(msg.sender == address(token), ERROR_CALLER_NOT_TOKEN);
@@ -43,9 +42,9 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
     }
 
     /**
-     * @notice Initialize a new MiniMe token that will be the controller of an ERC20 token
-     * @param _token The MiniMe token that is used in the DAO
-     * @param _erc20 The ERC20 token that is locked in order to receive MiniMe tokens
+     * @notice Initialize a new MiniMe token that will be convertible from an ERC20 token
+     * @param _token The MiniMeToken controlled by this app
+     * @param _erc20 The ERC20 token that is deposited in order to receive MiniMe tokens
      */
     function initialize(MiniMeToken _token, ERC20 _erc20) external {
         initialized();
@@ -57,35 +56,40 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
     }
 
     /**
-     * @notice Lock `@tokenAmount(self.erc20(): address, _amount, false)` tokens
+     * @notice Wrap `@tokenAmount(self.erc20(): address, _amount)`
      */
-    function lock(uint256 _amount) external {
-        require(_amount > 0, ERROR_LOCK_AMOUNT_ZERO);
+    function deposit(uint256 _amount) external {
+        require(_amount > 0, ERROR_DEPOSIT_AMOUNT_ZERO);
 
-        lockedAmount[msg.sender] = lockedAmount[msg.sender].add(_amount);
-        emit TokensLocked(msg.sender, _amount);
-
-        require(erc20.transferFrom(msg.sender, address(this), _amount), ERROR_ERC20_TRANSFER_FROM_FAILED);
+        // Fetch erc20 tokens and mint minime tokens
+        require(erc20.safeTransferFrom(msg.sender, address(this), _amount), ERROR_ERC20_TRANSFER_FROM_FAILED);
         require(token.generateTokens(msg.sender, _amount), ERROR_TOKEN_MINT_FAILED);
+
+        emit Deposit(msg.sender, _amount);
     }
 
     /**
-     * @notice Unlock `@tokenAmount(self.erc20(): address, _amount, false)` tokens
+     * @notice Unwrap `@tokenAmount(self.erc20(): address, _amount)`
      */
-    function unlock(uint256 _amount) external {
-        require(_amount > 0, ERROR_UNLOCK_AMOUNT_ZERO);
-        require(_amount <= lockedAmount[msg.sender], ERROR_INVALID_UNLOCK_AMOUNT);
+    function withdraw(uint256 _amount) external {
+        require(_amount > 0, ERROR_WITHDRAW_AMOUNT_ZERO);
+        require(_amount <= ERC20(token).staticBalanceOf(msg.sender), ERROR_INVALID_WITHDRAW_AMOUNT);
 
-        lockedAmount[msg.sender] = lockedAmount[msg.sender].sub(_amount);
-        emit TokensUnlocked(msg.sender, _amount);
-
+        // Burn minime tokens and return erc20 tokens
         require(token.destroyTokens(msg.sender, _amount), ERROR_TOKEN_BURN_FAILED);
-        require(erc20.transfer(msg.sender, _amount), ERROR_ERC20_TRANSFER_FAILED);
+        require(erc20.safeTransfer(msg.sender, _amount), ERROR_ERC20_TRANSFER_FAILED);
+
+        emit Withdrawal(msg.sender, _amount);
     }
+
+    // ITokenController fns
+    // `onTransfer()`, `onApprove()`, and `proxyPayment()` are callbacks from the MiniMe token
+    // contract and are only meant to be called through the managed MiniMe token that gets assigned
+    // during initialization.
 
     /*
     * @dev Notifies the controller about a token transfer allowing the controller to react if desired
-    * @return False aways
+    * @return Always false to deny transfers
     */
     function onTransfer(address, address, uint256) external onlyToken returns (bool) {
         return false;
@@ -93,7 +97,7 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
 
     /**
      * @dev Notifies the controller about an approval allowing the controller to react if desired
-     * @return False always
+     * @return Always false to deny approvals
      */
     function onApprove(address, address, uint256) external onlyToken returns (bool) {
         return false;
@@ -101,10 +105,16 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
 
     /**
      * @dev Notifies the controller when the token contract receives ETH allowing the controller to react if desired
-     * @return False always
+     * @return Always false to deny sent ETH
      */
     function proxyPayment(address) external payable onlyToken returns (bool) {
         return false;
+    }
+
+    // Forwarding fns
+
+    function isForwarder() public pure returns (bool) {
+        return true;
     }
 
     /**
@@ -116,8 +126,9 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
         require(canForward(msg.sender, _evmScript), ERROR_CAN_NOT_FORWARD);
         bytes memory input = new bytes(0);
 
-        // Add the managed token to the blacklist to disallow a token holder from executing actions
-        // on the token controller's (this contract) behalf
+        // Add both known tokens to the blacklist to disallow a token holder from interacting with
+        // either token on this contract's behalf.
+        // Note that this contract is the controller of at least the attached MiniMe token.
         address[] memory blacklist = new address[](2);
         blacklist[0] = address(token);
         blacklist[1] = address(erc20);
@@ -125,15 +136,7 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
         runScript(_evmScript, input, blacklist);
     }
 
-    function isForwarder() public pure returns (bool) {
-        return true;
-    }
-
     function canForward(address _sender, bytes) public view returns (bool) {
-        return hasInitialized() && token.balanceOf(_sender) > 0;
-    }
-
-    function getLockedAmount(address _account) public view returns (uint256) {
-        return lockedAmount[_account];
+        return hasInitialized() && ERC20(token).staticBalanceOf(_sender) > 0;
     }
 }

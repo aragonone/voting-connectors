@@ -16,7 +16,7 @@ export function useUnwrapTokensAction(onDone = noop) {
   return useCallback(
     amount => {
       // Don't care about response
-      api.unlock(amount).toPromise()
+      api.withdraw(amount).toPromise()
       onDone()
     },
     [api, onDone]
@@ -44,7 +44,7 @@ export function useWrapTokensAction(onDone = noop) {
       }
 
       // Don't care about response
-      api.lock(amount, intentParams).toPromise()
+      api.deposit(amount, intentParams).toPromise()
       onDone()
     },
     [api, currentApp, outsideToken, onDone]
