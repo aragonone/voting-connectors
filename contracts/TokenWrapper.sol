@@ -56,7 +56,7 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
     }
 
     /**
-     * @notice Wrap `@tokenAmount(self.erc20(): address, _amount, false)`
+     * @notice Wrap `@tokenAmount(self.erc20(): address, _amount)`
      */
     function deposit(uint256 _amount) external {
         require(_amount > 0, ERROR_DEPOSIT_AMOUNT_ZERO);
@@ -69,7 +69,7 @@ contract TokenWrapper is ITokenController, IForwarder, AragonApp {
     }
 
     /**
-     * @notice Unwrap `@tokenAmount(self.erc20(): address, _amount, false)`
+     * @notice Unwrap `@tokenAmount(self.erc20(): address, _amount)`
      */
     function withdraw(uint256 _amount) external {
         require(_amount > 0, ERROR_WITHDRAW_AMOUNT_ZERO);
