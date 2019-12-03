@@ -29,8 +29,8 @@ app.store(
         return { ...state, isSyncing: true }
       case events.SYNC_STATUS_SYNCED:
         return { ...state, isSyncing: false }
-      case 'TokensLocked':
-      case 'TokensUnlocked':
+      case 'Deposit':
+      case 'Withdrawal':
         return updateHolder(state, event)
       default:
         return state

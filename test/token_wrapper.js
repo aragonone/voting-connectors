@@ -36,30 +36,28 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
   it('can mint tokens', async () => {
     await erc20.approve(tokenWrapper.address, 2e18, { from: holder })
-    await tokenWrapper.lock(2e18, { from: holder })
+    await tokenWrapper.deposit(2e18, { from: holder })
 
     assert.isTrue(await tokenWrapper.canForward(holder, '0x'))
-    assert.equal((await tokenWrapper.getLockedAmount(holder)).toString(), 2e18)
     assert.equal((await token.balanceOf(holder)).toString(), 2e18)
     assert.equal((await erc20.balanceOf(holder)).toString(), 999998e18)
   })
 
   it('can not mint invalid amounts', async () => {
-    await assertRevert(tokenWrapper.lock(0, { from: holder }), 'TW_LOCK_AMOUNT_ZERO')
-    await assertRevert(tokenWrapper.lock(1e30, { from: holder }), 'TW_ERC20_TRANSFER_FROM_FAILED')
+    await assertRevert(tokenWrapper.deposit(0, { from: holder }), 'TW_DEPOSIT_AMOUNT_ZERO')
+    await assertRevert(tokenWrapper.deposit(1e30, { from: holder }), 'TW_ERC20_TRANSFER_FROM_FAILED')
   })
 
   it('can burn tokens', async () => {
-    await tokenWrapper.unlock(1e18, { from: holder })
+    await tokenWrapper.withdraw(1e18, { from: holder })
 
-    assert.equal((await tokenWrapper.getLockedAmount(holder)).toString(), 1e18)
     assert.equal((await token.balanceOf(holder)).toString(), 1e18)
     assert.equal((await erc20.balanceOf(holder)).toString(), 999999e18)
   })
 
   it('can not burn invalid amounts', async () => {
-    await assertRevert(tokenWrapper.unlock(0, { from: holder }), 'TW_UNLOCK_AMOUNT_ZERO')
-    await assertRevert(tokenWrapper.unlock(1e30, { from: holder }), 'TW_INVALID_UNLOCK_AMOUNT')
+    await assertRevert(tokenWrapper.withdraw(0, { from: holder }), 'TW_WITHDRAW_AMOUNT_ZERO')
+    await assertRevert(tokenWrapper.withdraw(1e30, { from: holder }), 'TW_INVALID_WITHDRAW_AMOUNT')
   })
 
   it('does not allow to transfer tokens', async () => {
