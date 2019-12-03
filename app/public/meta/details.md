@@ -1,5 +1,5 @@
-An application for Aragon that allows locking/unlocking any ERC20 token to mint/burn organization tokens.
+An Aragon application that allows any ERC20 token to be converted to and from a MiniMe governance token.
 
 **Features**
-- Lock ERC20 tokens to mint organization tokens.
-- Burn organization tokens to unlock ERC20 tokens.
+- Deposit ERC20 tokens to mint governance tokens.
+- Burn governance tokens to withdraw ERC20 tokens.

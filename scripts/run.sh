@@ -6,6 +6,7 @@ echo RUNNING APP IN MODE: \"$MODE\"
 
 # Exit script as soon as a command fails.
 set -o errexit
+set -x
 
 # Executes cleanup function at script exit.
 trap cleanup EXIT
@@ -43,11 +44,11 @@ run() {
 }
 
 runUsingIPFS() {
-  npx aragon run --files dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
+  npx aragon run --files dist --template ExampleTemplate --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 runUsingHTTP() {
-  npx aragon run --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
+  npx aragon run --http localhost:8001 --http-served-from ./dist --template ExampleTemplate --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
 startDevchain
