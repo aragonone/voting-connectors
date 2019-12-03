@@ -6,6 +6,8 @@
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
   "scripts": {
     "prepare": "cd app && npm install && cd ..",
+    "apm:prepublish": "npm run compile",
+    "apm:publish": "node scripts/publish",
     "compile": "aragon contracts compile",
     "build": "cd app && npm run build && cd ..",
     "lint": "solium --dir ./contracts",
