@@ -10,6 +10,8 @@ import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
+import "./Checkpoint.sol";
+import "./ERC20ViewOnly.sol";
 import "./IERC20WithCheckpointing.sol";
 import "./IERC20WithDecimals.sol";
 
@@ -21,11 +23,10 @@ import "./IERC20WithDecimals.sol";
  *   - MiniMe token
  *   - https://github.com/MyBitFoundation/MyBit-DAO.tech/blob/master/apps/MyTokens/contracts/MyTokens.sol
  */
-contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, AragonApp {
+contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
-
-    uint256 internal constant MAX_UINT128 = uint256(uint128(-1));
+    using Checkpoint for Checkpoint.Data[];
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "TW_TOKEN_NOT_CONTRACT";
     string private constant ERROR_DEPOSIT_AMOUNT_ZERO = "TW_DEPOSIT_AMOUNT_ZERO";
@@ -34,25 +35,16 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, Aragon
     string private constant ERROR_INVALID_WITHDRAW_AMOUNT = "TW_INVALID_WITHDRAW_AMOUNT";
     string private constant ERROR_TOKEN_TRANSFER_FAILED = "TW_TOKEN_TRANSFER_FAILED";
     string private constant ERROR_CAN_NOT_FORWARD = "TW_CAN_NOT_FORWARD";
-    string private constant ERROR_UINT128_NUMBER_TOO_BIG = "TW_UINT128_NUMBER_TOO_BIG";
-
-    // Checkpoint struct for keeping track of token balances at particular block numbers
-    struct Checkpoint {
-        // `fromBlock` is the block number that the value was generated from
-        uint128 fromBlock;
-        // `value` is the amount of tokens at a specific block number
-        uint128 value;
-    }
 
     ERC20 public outsideToken;
     string public name;
     string public symbol;
 
     // Checkpointed balances of the wrapped token
-    mapping (address => Checkpoint[]) internal balances;
+    mapping (address => Checkpoint.Data[]) internal balances;
 
     // Checkpointed total supply of the wrapped token
-    Checkpoint[] internal totalSupplyHistory;
+    Checkpoint.Data[] internal totalSupplyHistory;
 
     event Deposit(address indexed entity, uint256 amount);
     event Withdrawal(address indexed entity, uint256 amount);
@@ -80,18 +72,19 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, Aragon
     function deposit(uint256 _amount) external isInitialized {
         require(_amount > 0, ERROR_DEPOSIT_AMOUNT_ZERO);
 
-        // Increase our wrapped token accounting
+        // Fetch the outside ERC20 tokens
+        require(outsideToken.safeTransferFrom(msg.sender, address(this), _amount), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+
+        // Then increase our wrapped token accounting
         uint256 currentBalance = balanceOf(msg.sender);
-        uint128 newBalance = _toUint128(currentBalance.add(_amount));
+        uint256 newBalance = currentBalance.add(_amount);
 
         uint256 currentTotalSupply = totalSupply();
-        uint128 newTotalSupply = _toUint128(currentTotalSupply.add(_amount));
+        uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
-        _updateValueAtNow(balances[msg.sender], newBalance);
-        _updateValueAtNow(totalSupplyHistory, newTotalSupply);
-
-        // Then fetch the outside ERC20 tokens
-        require(outsideToken.safeTransferFrom(msg.sender, address(this), _amount), ERROR_TOKEN_TRANSFER_FROM_FAILED);
+        uint256 currentBlock = getBlockNumber();
+        balances[msg.sender].updateValueAtNow(newBalance, currentBlock);
+        totalSupplyHistory.updateValueAtNow(newTotalSupply, currentBlock);
 
         emit Deposit(msg.sender, _amount);
     }
@@ -107,13 +100,14 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, Aragon
         require(_amount <= currentBalance, ERROR_INVALID_WITHDRAW_AMOUNT);
 
         // Decrease our wrapped token accounting
-        uint128 newBalance = _toUint128(currentBalance.sub(_amount));
+        uint256 newBalance = currentBalance.sub(_amount);
 
         uint256 currentTotalSupply = totalSupply();
-        uint128 newTotalSupply = _toUint128(currentTotalSupply.sub(_amount));
+        uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
-        _updateValueAtNow(balances[msg.sender], newBalance);
-        _updateValueAtNow(totalSupplyHistory, newTotalSupply);
+        uint256 currentBlock = getBlockNumber();
+        balances[msg.sender].updateValueAtNow(newBalance, currentBlock);
+        totalSupplyHistory.updateValueAtNow(newTotalSupply, currentBlock);
 
         // Then return ERC20 tokens
         require(outsideToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
@@ -124,22 +118,6 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, Aragon
     // ERC20 fns - note that this token is a non-transferrable "view-only" implementation.
     // Users should only be changing balances by depositing and withdrawing tokens.
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
-
-    function approve(address, uint256) public returns (bool) {
-        return false;
-    }
-
-    function transfer(address, uint256) public returns (bool) {
-        return false;
-    }
-
-    function transferFrom(address, address, uint256) public returns (bool) {
-        return false;
-    }
-
-    function allowance(address, address) public view returns (uint256) {
-        return 0;
-    }
 
     function balanceOf(address _owner) public view returns (uint256) {
         return _balanceOfAt(_owner, getBlockNumber());
@@ -205,67 +183,11 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, Aragon
 
     // Internal fns
 
-    function _updateValueAtNow(Checkpoint[] storage _checkpoints, uint128 _value) internal {
-        uint256 checkpointsLength = _checkpoints.length;
-
-        if ((checkpointsLength == 0) || (_checkpoints[checkpointsLength - 1].fromBlock < getBlockNumber())) {
-            Checkpoint storage newCheckPoint = _checkpoints[checkpointsLength + 1];
-            newCheckPoint.fromBlock = uint128(getBlockNumber64());
-            newCheckPoint.value = _value;
-        } else {
-            Checkpoint storage oldCheckPoint = _checkpoints[checkpointsLength - 1];
-            oldCheckPoint.value = _value;
-        }
-    }
-
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
-        _getCheckpointedValueAt(balances[_owner], _blockNumber);
+        balances[_owner].getValueAt(_blockNumber);
     }
 
     function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
-        _getCheckpointedValueAt(totalSupplyHistory, _blockNumber);
-    }
-
-    function _getCheckpointedValueAt(Checkpoint[] storage _checkpoints, uint256 _blockNumber) internal view returns (uint256) {
-        uint256 checkpointsLength = _checkpoints.length;
-
-        // Short circuit if there's no checkpoints yet
-        // Note that this also lets us avoid using SafeMath later on, as we've established that
-        // there must be at least one checkpoint
-        if (checkpointsLength == 0) {
-            return 0;
-        }
-
-        // Check last checkpoint
-        uint256 lastCheckpointIndex = checkpointsLength - 1;
-        Checkpoint storage lastCheckpoint = _checkpoints[lastCheckpointIndex];
-        if (_blockNumber >= lastCheckpoint.fromBlock) {
-            return uint256(lastCheckpoint.value);
-        }
-
-        // Check first checkpoint (if not already checked with the above check on last)
-        if (checkpointsLength == 1 || _blockNumber < _checkpoints[0].fromBlock) {
-            return 0;
-        }
-
-        // Binary search through checkpoints
-        uint256 min = 0;
-        uint256 max = checkpointsLength - 1;
-        while (max > min) {
-            uint256 mid = (max + min + 1) / 2;
-            if (_checkpoints[mid].fromBlock <= _blockNumber) {
-                min = mid;
-            } else {
-                // Note that we don't need SafeMath here because mid must always be greater than 0
-                // from the while condition
-                max = mid - 1;
-            }
-        }
-        return uint256(_checkpoints[min].value);
-    }
-
-    function _toUint128(uint256 _a) internal pure returns (uint128) {
-        require(_a <= MAX_UINT128, ERROR_UINT128_NUMBER_TOO_BIG);
-        return uint128(_a);
+        totalSupplyHistory.getValueAt(_blockNumber);
     }
 }
