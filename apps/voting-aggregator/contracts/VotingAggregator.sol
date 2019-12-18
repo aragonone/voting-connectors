@@ -10,6 +10,7 @@ import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
+import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/StaticInvoke.sol";
 
@@ -20,7 +21,7 @@ import "./interfaces/IERC900History.sol";
  * @title VotingAggregator
  * @notice Voting power aggregator across many sources that provides a "view-only" checkpointed ERC20 implementation
  */
-contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, AragonApp {
+contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
     using StaticInvoke for address;
 
@@ -110,20 +111,23 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, Ar
 
         uint256 newSourceId = powerSourcesLength++;
 
-        PowerSource storage source = powerSources[newSourceId];
-        source.addr = _sourceAddr;
-        source.sourceType = _sourceType;
-        source.weight = _weight;
+        powerSources[newSourceId] = PowerSource({
+            addr: _sourceAddr,
+            sourceType: _sourceType,
+            weight: _weight
+        });
 
         // Start activation history with [current block, max block)
         source.activationHistory.push(
-            ActiveRange(
-                uint128(getBlockNumber64()), // enabled block
-                MAX_UINT128                  // disabled block
+            ActiveRange({
+                enabledFromBlock: uint128(getBlockNumber64()),
+                disabledOnBlock: MAX_UINT128
             )
         );
 
         emit AddPowerSource(newSourceId, _sourceAddr, _sourceType, _weight);
+
+        return newSourceId;
     }
 
     /**
@@ -172,10 +176,10 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, Ar
         require(!_sourceEnabledAt(source, getBlockNumber()), ERROR_SOURCE_NOT_DISABLED);
 
         source.activationHistory.push(
-            ActiveRange(
-                uint128(getBlockNumber64()), // enabled block
-                MAX_UINT128                  // disabled block
-            )
+            ActiveRange({
+                enabledFromBlock: uint128(getBlockNumber64()),
+                disabledOnBlock: MAX_UINT128
+            })
         );
 
         emit EnablePowerSource(_sourceId);
@@ -184,22 +188,6 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, Ar
     // ERC20 fns - note that this token is a non-transferrable "view-only" implementation.
     // Users should only be changing balances by changing their balances in the underlying tokens.
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
-
-    function approve(address, uint256) public returns (bool) {
-        return false;
-    }
-
-    function transfer(address, uint256) public returns (bool) {
-        return false;
-    }
-
-    function transferFrom(address, address, uint256) public returns (bool) {
-        return false;
-    }
-
-    function allowance(address, address) public view returns (uint256) {
-        return 0;
-    }
 
     function balanceOf(address _owner) public view returns (uint256) {
         return balanceOfAt(_owner, getBlockNumber());
@@ -354,9 +342,10 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, Ar
             return true;
         }
 
-        // Binary search through history
+        // Do binary search
+        // As we've already checked both ends, we don't need to check the last checkpoint again
         uint256 min = 0;
-        uint256 max = historyLength - 1;
+        uint256 max = historyLength - 2;
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
             ActiveRange storage midPoint = history[mid];
@@ -401,7 +390,4 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, Ar
 
         revert(ERROR_INVALID_CALL_OR_SELECTOR);
     }
-
-    // Private fns
-
 }
