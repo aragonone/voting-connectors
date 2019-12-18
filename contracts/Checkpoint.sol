@@ -12,6 +12,7 @@ pragma solidity 0.4.24;
  *   - MiniMe token
  */
 library Checkpoint {
+    // review(@izqui): why not prefix error with 'CHECKPOINTING'?
     string private constant ERROR_UINT128_NUMBER_TOO_BIG = "UINT128_NUMBER_TOO_BIG";
 
     uint256 internal constant MAX_UINT128 = uint256(uint128(-1));
@@ -19,11 +20,13 @@ library Checkpoint {
     // Checkpoint data struct for keeping track of values at particular block numbers
     struct Data {
         // `fromBlock` is the block number that the value was generated from
-        uint128 fromBlock;
+        uint128 fromBlock; // review(@izqui): consider renaming to 'time' as we do in Aragon Court, as there's no reason why this lib can only work with block numbers
         // `value` is the value at a specific block number
         uint128 value;
     }
 
+    // review(@izqui): consider renaming 'now' to 'time' or 'block' as it is quite weird that 'now' could totally be a value in the past or the future
+    // as this library has no notion of what time it is
     function updateValueAtNow(Data[] storage _self, uint256 _value, uint256 _now) internal {
         uint256 checkpointsLength = _self.length;
         uint128 castedValue = _toUint128(_value);
@@ -36,6 +39,7 @@ library Checkpoint {
         }
     }
 
+    // review(@izqui): not reviewing, assuming it was copied from other implementations we use
     function getValueAt(Data[] storage _self, uint256 _blockNumber) internal view returns (uint256) {
         uint256 checkpointsLength = _self.length;
 
@@ -75,6 +79,7 @@ library Checkpoint {
         return uint256(_self[min].value);
     }
 
+    // review(@izqui): consider renaming to 'safeToUint128' as it otherwise could look like the language's default casting
     function _toUint128(uint256 _a) private pure returns (uint128) {
         require(_a <= MAX_UINT128, ERROR_UINT128_NUMBER_TOO_BIG);
         return uint128(_a);

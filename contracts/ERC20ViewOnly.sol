@@ -14,14 +14,17 @@ import "@aragon/os/contracts/lib/token/ERC20.sol";
  */
 contract ERC20ViewOnly is ERC20 {
     function approve(address, uint256) public returns (bool) {
+        // !!! review(@izqui): i would definitely revert either here or at the TW level
         return false;
     }
 
     function transfer(address, uint256) public returns (bool) {
+        // !!! review(@izqui): i would definitely revert either here or at the TW level
         return false;
     }
 
     function transferFrom(address, address, uint256) public returns (bool) {
+        // !!! review(@izqui): i would definitely revert either here or at the TW level
         return false;
     }
 

@@ -18,7 +18,7 @@ import "./IERC20WithDecimals.sol";
 
 /**
  * @title TokenWrapper
- * @notice Wrapper around a normal ERC20 token that provides a "view-only" checkpointed ERC20 implementation for use with Voting apps.
+ * @notice Wrapper around a standard ERC20 token that provides a "view-only" checkpointed ERC20 implementation for use with Aragon Voting apps.
  * @dev Inspired by:
  *   - MiniMe token
  *   - https://github.com/MyBitFoundation/MyBit-DAO.tech/blob/master/apps/MyTokens/contracts/MyTokens.sol
@@ -36,18 +36,18 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     string private constant ERROR_TOKEN_TRANSFER_FAILED = "TW_TOKEN_TRANSFER_FAILED";
     string private constant ERROR_CAN_NOT_FORWARD = "TW_CAN_NOT_FORWARD";
 
-    ERC20 public outsideToken;
+    ERC20 public outsideToken; // review(@izqui): 'wrappedToken'?
     string public name;
     string public symbol;
 
     // Checkpointed balances of the wrapped token
-    mapping (address => Checkpoint.Data[]) internal balances;
+    mapping (address => Checkpoint.Data[]) internal balances; // review(@izqui): consider renaming to 'balancesHistory' for consistency with 'totalSupplyHistory
 
     // Checkpointed total supply of the wrapped token
     Checkpoint.Data[] internal totalSupplyHistory;
 
-    event Deposit(address indexed entity, uint256 amount);
-    event Withdrawal(address indexed entity, uint256 amount);
+    event Deposit(address indexed entity, uint256 amount); // review(@izqui): consider renaming to 'Wrap' to make it more semantic
+    event Withdrawal(address indexed entity, uint256 amount); // review(@izqui): consider renaming to 'Unwrap' to make it more semantic
 
     /**
      * @notice Create a new checkpointed wrapped token that will be convertible from a normal ERC20 token
@@ -69,6 +69,9 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
      * @notice Wrap `@tokenAmount(self.outsideToken(): address, _amount)`
      * @param _amount Amount to wrap
      */
+    // review(@izqui): consider renaming 'wrap'
+    // review(@izqui): consider adding a 'to' argument that allows the depositer to decide who will receive the wrapped tokens,
+    // it could be useful to minimize txs in hot/cold setups
     function deposit(uint256 _amount) external isInitialized {
         require(_amount > 0, ERROR_DEPOSIT_AMOUNT_ZERO);
 
@@ -93,6 +96,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
      * @notice Unwrap `@tokenAmount(self.outsideToken(): address, _amount)`
      * @param _amount Amount to unwrap
      */
+    // review(@izqui): consider renaming 'unwrap'
+    // review(@izqui): consider adding a 'to' argument that allows the unwrapper to transfer the tokens to another account
     function withdraw(uint256 _amount) external isInitialized {
         require(_amount > 0, ERROR_WITHDRAW_AMOUNT_ZERO);
 
@@ -183,10 +188,12 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
 
     // Internal fns
 
+    // !!! review(@izqui): missing return
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
         balances[_owner].getValueAt(_blockNumber);
     }
 
+    // !!! review(@izqui): missing return
     function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
         totalSupplyHistory.getValueAt(_blockNumber);
     }
