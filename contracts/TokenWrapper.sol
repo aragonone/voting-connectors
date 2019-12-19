@@ -184,10 +184,10 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     // Internal fns
 
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
-        balancesHistory[_owner].getValueAt(_blockNumber);
+        return balancesHistory[_owner].getValueAt(_blockNumber);
     }
 
     function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
-        totalSupplyHistory.getValueAt(_blockNumber);
+        return totalSupplyHistory.getValueAt(_blockNumber);
     }
 }
