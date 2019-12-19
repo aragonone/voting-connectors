@@ -34,6 +34,8 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
     string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
+    string private constant ERROR_ZERO_WEIGHT = "VA_ZERO_WEIGHT";
+    string private constant ERROR_SAME_WEIGHT = "VA_SAME_WEIGHT";
     string private constant ERROR_CAN_NOT_FORWARD = "VA_CAN_NOT_FORWARD";
     string private constant ERROR_SOURCE_CALL_FAILED = "VA_SOURCE_CALL_FAILED";
     string private constant ERROR_INVALID_CALL_OR_SELECTOR = "VA_INVALID_CALL_OR_SELECTOR";
@@ -68,7 +70,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     event EnablePowerSource(uint256 indexed sourceId);
 
     modifier sourceExists(uint256 _sourceId) {
-        require(_sourceId <= powerSourcesLength, ERROR_NO_POWER_SOURCE);
+        require(_sourceId < powerSourcesLength, ERROR_NO_POWER_SOURCE);
         _;
     }
 
@@ -99,6 +101,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         returns (uint256)
     {
         require(isContract(_sourceAddr), ERROR_POWER_SOURCE_NOT_CONTRACT);
+        require(_weight > 0, ERROR_ZERO_WEIGHT);
 
         uint256 newSourceId = powerSourcesLength++;
 
@@ -125,6 +128,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         authP(MANAGE_WEIGHTS_ROLE, arr(_weight, powerSources[_sourceId].weight))
         sourceExists(_sourceId)
     {
+        require(powerSources[_sourceId].weight != _weight, ERROR_SAME_WEIGHT);
         powerSources[_sourceId].weight = _weight;
         emit ChangePowerSourceWeight(_sourceId, _weight);
     }
