@@ -7,7 +7,8 @@ pragma solidity ^0.4.24;
 
 /**
  * @title Checkpointing
- * @notice Checkpointing library for keep track of historical values based on block numbers.
+ * @notice Checkpointing library for keeping track of historical values based on an arbitrary time
+ *         unit (e.g. seconds or block numbers).
  * @dev Inspired by:
  *   - MiniMe token (https://github.com/aragon/minime/blob/master/contracts/MiniMeToken.sol)
  *   - Staking (https://github.com/aragon/staking/blob/master/contracts/Checkpointing.sol)
@@ -111,8 +112,11 @@ library Checkpointing {
             if (_time > midTime) {
                 low = mid;
             } else if (_time < midTime) {
+                // Note that we don't need SafeMath here because mid must always be greater than 0
+                // from the while condition
                 high = mid - 1;
-            } else { // _time == midTime
+            } else {
+                // _time == midTime
                 return uint256(checkpoint.value);
             }
         }
