@@ -10,7 +10,7 @@ import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
-import "./Checkpoint.sol";
+import "./Checkpointing.sol";
 import "./ERC20ViewOnly.sol";
 import "./IERC20WithCheckpointing.sol";
 import "./IERC20WithDecimals.sol";
@@ -26,7 +26,7 @@ import "./IERC20WithDecimals.sol";
 contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
-    using Checkpoint for Checkpoint.Data[];
+    using Checkpointing for Checkpointing.History;
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "TW_TOKEN_NOT_CONTRACT";
     string private constant ERROR_DEPOSIT_AMOUNT_ZERO = "TW_DEPOSIT_AMOUNT_ZERO";
@@ -41,10 +41,10 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     string public symbol;
 
     // Checkpointed balances of the wrapped token
-    mapping (address => Checkpoint.Data[]) internal balances;
+    mapping (address => Checkpointing.History) internal balances;
 
     // Checkpointed total supply of the wrapped token
-    Checkpoint.Data[] internal totalSupplyHistory;
+    Checkpointing.History internal totalSupplyHistory;
 
     event Deposit(address indexed entity, uint256 amount);
     event Withdrawal(address indexed entity, uint256 amount);
@@ -83,8 +83,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
         uint256 currentBlock = getBlockNumber();
-        balances[msg.sender].updateValueAtNow(newBalance, currentBlock);
-        totalSupplyHistory.updateValueAtNow(newTotalSupply, currentBlock);
+        balances[msg.sender].addCheckpoint(newBalance, currentBlock);
+        totalSupplyHistory.addCheckpoint(newTotalSupply, currentBlock);
 
         emit Deposit(msg.sender, _amount);
     }
@@ -106,8 +106,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
         uint256 currentBlock = getBlockNumber();
-        balances[msg.sender].updateValueAtNow(newBalance, currentBlock);
-        totalSupplyHistory.updateValueAtNow(newTotalSupply, currentBlock);
+        balances[msg.sender].addCheckpoint(newBalance, currentBlock);
+        totalSupplyHistory.addCheckpoint(newTotalSupply, currentBlock);
 
         // Then return ERC20 tokens
         require(outsideToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
