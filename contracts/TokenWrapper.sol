@@ -83,8 +83,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
         uint256 currentBlock = getBlockNumber();
-        balancesHistory[msg.sender].addCheckpoint(newBalance, currentBlock);
-        totalSupplyHistory.addCheckpoint(newTotalSupply, currentBlock);
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance);
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply);
 
         emit Deposit(msg.sender, _amount);
     }
@@ -106,8 +106,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
         uint256 currentBlock = getBlockNumber();
-        balancesHistory[msg.sender].addCheckpoint(newBalance, currentBlock);
-        totalSupplyHistory.addCheckpoint(newTotalSupply, currentBlock);
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance);
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply);
 
         // Then return ERC20 tokens
         require(outsideToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
