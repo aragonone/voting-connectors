@@ -16,10 +16,12 @@
     "clean": "git clean -fdxi apps",
     "test": "npm run test:all",
     "test:all": "lerna run --scope=@aragonone/apps-* --concurrency=1 --stream test",
-    "test:token-wrapper": "lerna run --scope=@aragon/apps-token-wrapper --stream test",
+    "test:token-wrapper": "lerna run --scope=@aragonone/apps-token-wrapper --stream test",
+    "test:shared": "lerna run --scope=@aragonone/voting-connectors-* --stream test",
     "coverage": "npm run coverage:all",
     "coverage:all": "lerna run --scope=@aragonone/apps-* --concurrency=1 --stream coverage",
-    "coverage:token-wrapper": "lerna run --scope=@aragonone/token-wrapper --concurrency=1 --stream coverage",
+    "coverage:token-wrapper": "lerna run --scope=@aragonone/apps-token-wrapper --stream coverage",
+    "coverage:shared": "lerna run --scope=@aragonone/voting-connectors-* --stream coverage",
     "lint": "lerna run --scope=@aragonone/apps-* lint"
   }
 }
