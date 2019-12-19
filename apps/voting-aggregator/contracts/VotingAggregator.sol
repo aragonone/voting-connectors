@@ -10,6 +10,7 @@ import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
+import "@aragonone/voting-connectors-contract-utils/contracts/ActivePeriod.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/StaticInvoke.sol";
@@ -24,21 +25,17 @@ import "./interfaces/IERC900History.sol";
 contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
     using StaticInvoke for address;
+    using ActivePeriod for ActivePeriod.History;
 
     // TODO: just use keccak hashes
     bytes32 public constant ADD_POWER_SOURCE_ROLE = keccak256("ADD_POWER_SOURCE_ROLE");
     bytes32 public constant MANAGE_POWER_SOURCE_ROLE = keccak256("MANAGE_POWER_SOURCE_ROLE");
     bytes32 public constant MANAGE_WEIGHTS_ROLE = keccak256("MANAGE_WEIGHTS_ROLE");
 
-    uint128 internal constant MAX_UINT128 = uint128(-1);
-
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
     string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
-    string private constant ERROR_SOURCE_NOT_ENABLED = "VA_POWER_SOURCE_NOT_ENABLED";
-    string private constant ERROR_SOURCE_NOT_DISABLED = "VA_POWER_SOURCE_NOT_DISABLED";
     string private constant ERROR_CAN_NOT_FORWARD = "VA_CAN_NOT_FORWARD";
     string private constant ERROR_SOURCE_CALL_FAILED = "VA_SOURCE_CALL_FAILED";
-    string private constant ERROR_INVALID_SOURCE_ACTIVE_HISTORY = "VA_INVALID_SOURCE_ACTIVE_HISTORY";
     string private constant ERROR_INVALID_CALL_OR_SELECTOR = "VA_INVALID_CALL_OR_SELECTOR";
 
     enum PowerSourceType {
@@ -51,17 +48,11 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         TotalSupplyAt
     }
 
-    // Range of [enabledFromBlock, disabledOnBlock)
-    struct ActiveRange {
-        uint128 enabledFromBlock;
-        uint128 disabledOnBlock;
-    }
-
     struct PowerSource {
         address addr;
         PowerSourceType sourceType;
         uint256 weight;
-        ActiveRange[] activationHistory;
+        ActivePeriod.History activationHistory;
     }
 
     string public name;
@@ -111,19 +102,13 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
         uint256 newSourceId = powerSourcesLength++;
 
-        powerSources[newSourceId] = PowerSource({
-            addr: _sourceAddr,
-            sourceType: _sourceType,
-            weight: _weight
-        });
+        PowerSource storage source = powerSources[newSourceId];
+        source.addr = _sourceAddr;
+        source.sourceType = _sourceType;
+        source.weight = _weight;
 
         // Start activation history with [current block, max block)
-        source.activationHistory.push(
-            ActiveRange({
-                enabledFromBlock: uint128(getBlockNumber64()),
-                disabledOnBlock: MAX_UINT128
-            )
-        );
+        source.activationHistory.startNewPeriodFrom(getBlockNumber());
 
         emit AddPowerSource(newSourceId, _sourceAddr, _sourceType, _weight);
 
@@ -154,11 +139,12 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         sourceExists(_sourceId)
     {
         PowerSource storage source = powerSources[_sourceId];
-        require(_sourceEnabledAt(source, getBlockNumber()), ERROR_SOURCE_NOT_ENABLED);
 
-        ActiveRange[] storage activationHistory = source.activationHistory;
-        ActiveRange storage currentActiveRange = activationHistory[activationHistory.length];
-        currentActiveRange.disabledOnBlock = uint128(getBlockNumber64());
+        // Disable after this block
+        // This makes sure any queries to this aggregator this block are still consistent until the
+        // end of the block
+        // Ignore SafeMath here; we will have bigger issues if this overflows
+        source.activationHistory.stopCurrentPeriodAt(getBlockNumber() + 1);
 
         emit DisablePowerSource(_sourceId);
     }
@@ -173,14 +159,9 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         authP(MANAGE_POWER_SOURCE_ROLE, arr(uint256(1)))
     {
         PowerSource storage source = powerSources[_sourceId];
-        require(!_sourceEnabledAt(source, getBlockNumber()), ERROR_SOURCE_NOT_DISABLED);
 
-        source.activationHistory.push(
-            ActiveRange({
-                enabledFromBlock: uint128(getBlockNumber64()),
-                disabledOnBlock: MAX_UINT128
-            })
-        );
+        // Add new activation period with [current block, max block)
+        source.activationHistory.startNewPeriodFrom(getBlockNumber());
 
         emit EnablePowerSource(_sourceId);
     }
@@ -201,11 +182,11 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
 
     function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256) {
-        return _aggregate(CallType.BalanceOfAt, abi.encode(_owner, _blockNumber));
+        return _aggregateAt(_blockNumber, CallType.BalanceOfAt, abi.encode(_owner, _blockNumber));
     }
 
     function totalSupplyAt(uint256 _blockNumber) public view returns (uint256) {
-        return _aggregate(CallType.TotalSupplyAt, abi.encode(_blockNumber));
+        return _aggregateAt(_blockNumber, CallType.TotalSupplyAt, abi.encode(_blockNumber));
     }
 
     // Forwarding fns
@@ -268,17 +249,17 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         sourceAddress = source.addr;
         sourceType = source.sourceType;
         weight = source.weight;
-        historyLength = source.activationHistory.length;
+        historyLength = source.activationHistory.history.length;
     }
 
     /**
      * @dev Return information about a power source's activation history
      * @param _sourceId Power source id
-     * @param _rangeIndex Index of activation history
-     * @return Start block of activation range
-     * @return End block of activation range
+     * @param _periodIndex Index of activation history
+     * @return Start block of activation period
+     * @return End block of activation period
      */
-    function getPowerSourceHistoryRange(uint256 _sourceId, uint256 _rangeIndex)
+    function getPowerSourceActivatationPeriod(uint256 _sourceId, uint256 _periodIndex)
         public
         view
         sourceExists(_sourceId)
@@ -287,86 +268,30 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
             uint128 disabledOnBlock
         )
     {
-        ActiveRange storage range = powerSources[_sourceId].activationHistory[_rangeIndex];
+        ActivePeriod.Period storage period = powerSources[_sourceId].activationHistory.getPeriod(_periodIndex);
 
-        enabledFromBlock = range.enabledFromBlock;
-        disabledOnBlock = range.disabledOnBlock;
+        enabledFromBlock = period.enabledFromTime;
+        disabledOnBlock = period.disabledOnTime;
     }
 
     // Internal fns
 
-    function _aggregate(CallType _callType, bytes memory _paramdata) internal view returns (uint256) {
+    function _aggregateAt(uint256 _blockNumber, CallType _callType, bytes memory _paramdata) internal view returns (uint256) {
         uint256 aggregate = 0;
 
         for (uint256 i = 0; i < powerSourcesLength; i++) {
             PowerSource storage source = powerSources[i];
 
-            bytes memory invokeData = abi.encodePacked(_selectorFor(_callType, source.sourceType), _paramdata);
-            (bool success, uint256 value) = source.addr.staticInvoke(invokeData);
-            require(success, ERROR_SOURCE_CALL_FAILED);
+            if (source.activationHistory.isEnabledAt(_blockNumber)) {
+                bytes memory invokeData = abi.encodePacked(_selectorFor(_callType, source.sourceType), _paramdata);
+                (bool success, uint256 value) = source.addr.staticInvoke(invokeData);
+                require(success, ERROR_SOURCE_CALL_FAILED);
 
-            aggregate = aggregate.add(source.weight.mul(value));
+                aggregate = aggregate.add(source.weight.mul(value));
+            }
         }
 
         return aggregate;
-    }
-
-    function _inActiveRange(ActiveRange storage _range, uint256 _blockNumber) internal view returns (bool) {
-        return _blockNumber >= _range.enabledFromBlock && _blockNumber < _range.disabledOnBlock;
-    }
-
-    function _sourceEnabledAt(PowerSource storage _source, uint256 _blockNumber) internal view returns (bool) {
-        ActiveRange[] storage history = _source.activationHistory;
-        uint256 historyLength = history.length;
-
-        // This should never happen, but we should return false anyhow
-        // Note that this also allows us to avoid using SafeMath later, as we've established there
-        // must be at least one history range
-        if (historyLength == 0) {
-            return false;
-        }
-
-        // Check last history range
-        uint256 lastHistoryIndex = historyLength - 1;
-        ActiveRange storage lastHistory = history[lastHistoryIndex];
-        if (_inActiveRange(lastHistory, _blockNumber)) {
-            return true;
-        } else if (historyLength == 1) {
-            // No need to go any further; we've checked the only history range
-            return false;
-        }
-
-        // Check first history range
-        ActiveRange storage firstHistory = history[0];
-        if (_inActiveRange(firstHistory, _blockNumber)) {
-            return true;
-        }
-
-        // Do binary search
-        // As we've already checked both ends, we don't need to check the last checkpoint again
-        uint256 min = 0;
-        uint256 max = historyLength - 2;
-        while (max > min) {
-            uint256 mid = (max + min + 1) / 2;
-            ActiveRange storage midPoint = history[mid];
-            if (_inActiveRange(midPoint, _blockNumber)) {
-                // This range includes the given block number
-                return true;
-            }
-
-            if (_blockNumber >= midPoint.disabledOnBlock) {
-                min = mid;
-            } else if (_blockNumber < midPoint.enabledFromBlock) {
-                // Note that we don't need SafeMath here because mid must always be greater than 0
-                // from the while condition
-                max = mid - 1;
-            } else {
-                revert(ERROR_INVALID_SOURCE_ACTIVE_HISTORY);
-            }
-        }
-
-        // No ranges left to test
-        return false;
     }
 
     function _selectorFor(CallType _callType, PowerSourceType _sourceType) internal pure returns (bytes4) {
