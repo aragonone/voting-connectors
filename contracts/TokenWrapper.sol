@@ -40,8 +40,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     string public name;
     string public symbol;
 
-    // Checkpointed balances of the wrapped token
-    mapping (address => Checkpointing.History) internal balances;
+    // Checkpointed balances of the wrapped token by block number
+    mapping (address => Checkpointing.History) internal balancesHistory;
 
     // Checkpointed total supply of the wrapped token
     Checkpointing.History internal totalSupplyHistory;
@@ -83,7 +83,7 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
         uint256 currentBlock = getBlockNumber();
-        balances[msg.sender].addCheckpoint(newBalance, currentBlock);
+        balancesHistory[msg.sender].addCheckpoint(newBalance, currentBlock);
         totalSupplyHistory.addCheckpoint(newTotalSupply, currentBlock);
 
         emit Deposit(msg.sender, _amount);
@@ -106,7 +106,7 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
         uint256 currentBlock = getBlockNumber();
-        balances[msg.sender].addCheckpoint(newBalance, currentBlock);
+        balancesHistory[msg.sender].addCheckpoint(newBalance, currentBlock);
         totalSupplyHistory.addCheckpoint(newTotalSupply, currentBlock);
 
         // Then return ERC20 tokens
@@ -184,7 +184,7 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     // Internal fns
 
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
-        balances[_owner].getValueAt(_blockNumber);
+        balancesHistory[_owner].getValueAt(_blockNumber);
     }
 
     function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
