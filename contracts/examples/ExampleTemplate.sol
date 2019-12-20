@@ -7,10 +7,10 @@ import "@aragon/os/contracts/lib/ens/PublicResolver.sol";
 import "@aragon/os/contracts/apm/APMNamehash.sol";
 
 import "@aragon/apps-voting/contracts/Voting.sol";
-import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 
 import "../test/mocks/ERC20Sample.sol";
 import "../TokenWrapper.sol";
+import "./IVotingGenericInitializer.sol";
 
 
 contract TemplateBase is APMNamehash {
@@ -42,13 +42,10 @@ contract TemplateBase is APMNamehash {
 
 
 contract ExampleTemplate is TemplateBase {
-    MiniMeTokenFactory tokenFactory;
-
     uint64 constant PCT = 10 ** 16;
     address constant ANY_ENTITY = address(-1);
 
     constructor(ENS ens) TemplateBase(DAOFactory(0), ens) public {
-        tokenFactory = new MiniMeTokenFactory();
     }
 
     function newInstance(ERC20 _wrappedToken) public {
@@ -57,22 +54,19 @@ contract ExampleTemplate is TemplateBase {
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
 
         address root = msg.sender;
-        bytes32 appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("token-wrapper")));
+        bytes32 tokenWrapperAppId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("token-wrapper")));
         bytes32 votingAppId = apmNamehash("voting");
 
-        TokenWrapper app = TokenWrapper(dao.newAppInstance(appId, latestVersionAppBase(appId)));
+        TokenWrapper tokenWrapper = TokenWrapper(dao.newAppInstance(tokenWrapperAppId, latestVersionAppBase(tokenWrapperAppId)));
         Voting voting = Voting(dao.newAppInstance(votingAppId, latestVersionAppBase(votingAppId)));
 
-        MiniMeToken token = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Org token", 18, "ORG", true);
-        token.changeController(app);
-
         // Initialize apps
-        app.initialize(token, _wrappedToken);
-        voting.initialize(token, 50 * PCT, 20 * PCT, 1 days);
+        tokenWrapper.initialize(_wrappedToken, "Org token", "ORG");
+        IVotingGenericInitializer(voting).initialize(tokenWrapper, 50 * PCT, 20 * PCT, 1 days);
 
         // HACK: create a random permission on TokenWrapper so it is detected as an app
         // Allow root to remove this permission if they'd like to uninstall this app in the future
-        acl.createPermission(address(-1), app, bytes32(-1), root);
+        acl.createPermission(address(-1), tokenWrapper, bytes32(-1), root);
 
         acl.createPermission(ANY_ENTITY, voting, voting.CREATE_VOTES_ROLE(), root);
 
