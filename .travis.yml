@@ -21,9 +21,17 @@ jobs:
       name: "Lint"
     - script: npm run test:token-wrapper
       name: "Token Wrapper"
+    - script: npm run test:voting-aggregator
+      name: "Voting Aggregator"
+    - script: npm run test:shared
+      name: "Shared"
 
     - stage: coverage
       script: npm run coverage:token-wrapper
       name: "Token Wrapper"
+    - script: npm run coverage:voting-aggregator
+      name: "Voting Aggregator"
+    - script: npm run coverage:shared
+      name: "Shared"
 after_success:
   - ./node_modules/.bin/lcov-result-merger 'apps/*/coverage/lcov.info' | ./node_modules/.bin/coveralls

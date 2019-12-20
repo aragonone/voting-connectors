@@ -1,9 +1,9 @@
 {
-  "name": "Token Wrapper",
+  "name": "Voting Aggregator",
   "author": "Aragon One",
-  "description": "Wraps/unwraps ERC20 tokens to mint/burn organization tokens",
+  "description": "Connect multiple sources to determine voting power",
   "details_url": "/meta/details.md",
-  "source_url": "https://github.com/aragonone/voting-connectors/blob/master/apps/token-wrapper",
+  "source_url": "https://github.com/aragonone/voting-connectors/blob/master/apps/voting-aggregator",
   "icons": [
     {
       "src": "/meta/icon.svg",

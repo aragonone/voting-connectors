@@ -1,7 +1,7 @@
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 
-const ACL = artifacts.require('ACL')
-const Kernel = artifacts.require('Kernel')
+const { deployDao } = require('./helpers/deploy.js')(artifacts)
+
 const ERC20 = artifacts.require('ERC20Sample')
 const TokenWrapper = artifacts.require('TokenWrapper')
 
@@ -11,11 +11,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
   let dao, acl, tokenWrapper, erc20
 
   before('deploy dao with token wrapper', async () => {
-    dao = await Kernel.new(false)
-    const aclBase = await ACL.new()
-    await dao.initialize(aclBase.address, root)
-    acl = ACL.at(await dao.acl())
-    await acl.createPermission(root, dao.address, await dao.APP_MANAGER_ROLE(), root, { from: root })
+    ({ dao, acl } = await deployDao(root))
 
     const tokenWrapperBase = await TokenWrapper.new()
     const { logs } = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
