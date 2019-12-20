@@ -8,7 +8,6 @@ import "@aragon/os/contracts/apm/APMNamehash.sol";
 
 import "@aragon/apps-voting/contracts/Voting.sol";
 
-import "../test/mocks/ERC20Sample.sol";
 import "../TokenWrapper.sol";
 import "./IVotingGenericInitializer.sol";
 

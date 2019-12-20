@@ -1,0 +1,29 @@
+language: node_js
+cache:
+  timeout: 600
+  directories:
+    - node_modules
+    - apps/token-wrapper/node_modules
+    - shared/contract-utils/node_modules
+notifications:
+  email: false
+node_js:
+  - '10'
+env:
+  global:
+    - INSTALL_FRONTEND=false
+install:
+  - travis_wait 60 npm install
+jobs:
+  include:
+    - stage: tests
+      script: npm run lint
+      name: "Lint"
+    - script: npm run test:token-wrapper
+      name: "Token Wrapper"
+
+    - stage: coverage
+      script: npm run coverage:token-wrapper
+      name: "Token Wrapper"
+after_success:
+  - ./node_modules/.bin/lcov-result-merger 'apps/*/coverage/lcov.info' | ./node_modules/.bin/coveralls

@@ -1,4 +1,4 @@
-const ERC20Sample = artifacts.require('./ERC20Sample')
+const ERC20Sample = artifacts.require('ERC20Sample')
 
 const deployToken = async () => {
   // ERC20Sample automatically mints tokens to msg.sender.

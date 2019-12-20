@@ -6,7 +6,7 @@ pragma solidity 0.4.24;
 
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
-import "../IERC20WithCheckpointing.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 
 
 contract IVotingGenericInitializer {

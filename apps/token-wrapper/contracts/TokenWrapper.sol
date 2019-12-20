@@ -10,10 +10,10 @@ import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
-import "./Checkpointing.sol";
-import "./ERC20ViewOnly.sol";
-import "./IERC20WithCheckpointing.sol";
-import "./IERC20WithDecimals.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/Checkpointing.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithDecimals.sol";
 
 
 /**
