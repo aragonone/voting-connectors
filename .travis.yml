@@ -29,7 +29,7 @@ jobs:
     - stage: coverage
       script: npm run coverage:token-wrapper
       name: "Token Wrapper"
-      script: npm run coverage:voting-aggregator
+    - script: npm run coverage:voting-aggregator
       name: "Voting Aggregator"
     - script: npm run coverage:shared
       name: "Shared"
