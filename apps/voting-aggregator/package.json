@@ -18,6 +18,7 @@
     "build": "cd app && npm run build && cd ..",
     "lint": "solium --dir ./contracts",
     "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
+    "coverage": "SOLIDITY_COVERAGE=true npm run ganache-cli:test",
     "start": "npm run start:ipfs",
     "start:app": "cd app && npm start && cd ..",
     "start:ipfs": "./scripts/run.sh ipfs",
