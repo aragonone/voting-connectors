@@ -33,7 +33,7 @@ library ActivePeriod {
         Period[] history;
     }
 
-    function startNewPeriodFrom(History storage _self, uint256 _enabledFromTime) internal {
+    function startNextPeriodFrom(History storage _self, uint256 _enabledFromTime) internal {
         require(_enabledFromTime <= MAX_UINT128, ERROR_TIME_TOO_BIG);
 
         Period[] storage history = _self.history;

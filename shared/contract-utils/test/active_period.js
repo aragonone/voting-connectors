@@ -24,7 +24,7 @@ contract('ActivePeriod lib', ([_, root]) => {
 
       assert.isFalse(await activePeriodWrapper.isEnabledAt(enabledFromTime))
 
-      await activePeriodWrapper.startNewPeriodFrom(enabledFromTime)
+      await activePeriodWrapper.startNextPeriodFrom(enabledFromTime)
 
       assert.isFalse(await activePeriodWrapper.isEnabledAt(enabledFromTime - 1))
       assert.isTrue(await activePeriodWrapper.isEnabledAt(enabledFromTime))
@@ -32,15 +32,15 @@ contract('ActivePeriod lib', ([_, root]) => {
 
     it('fails to start a new period if period is too big', async () => {
       const enabledFromTime = MAX_UINT128.add(new web3.BigNumber(1))
-      await assertRevert(activePeriodWrapper.startNewPeriodFrom(enabledFromTime), ERROR_TIME_TOO_BIG)
+      await assertRevert(activePeriodWrapper.startNextPeriodFrom(enabledFromTime), ERROR_TIME_TOO_BIG)
     })
 
     it('fails to start a new period if there is a previous activated one', async () => {
       const firstEnabledFromTime = 0
-      await activePeriodWrapper.startNewPeriodFrom(firstEnabledFromTime)
+      await activePeriodWrapper.startNextPeriodFrom(firstEnabledFromTime)
 
       const enabledFromTime = 1
-      await assertRevert(activePeriodWrapper.startNewPeriodFrom(enabledFromTime), ERROR_BAD_START_TIME)
+      await assertRevert(activePeriodWrapper.startNextPeriodFrom(enabledFromTime), ERROR_BAD_START_TIME)
     })
   })
   describe('stop current period', () => {
@@ -54,7 +54,7 @@ contract('ActivePeriod lib', ([_, root]) => {
     context('when there is a period', () => {
       const enabledFromTime = 10
       beforeEach('start new period', async () => {
-        await activePeriodWrapper.startNewPeriodFrom(enabledFromTime)
+        await activePeriodWrapper.startNextPeriodFrom(enabledFromTime)
       })
 
       context('when the last period is not active', () => {

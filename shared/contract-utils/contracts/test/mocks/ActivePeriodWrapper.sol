@@ -6,10 +6,10 @@ import "../../ActivePeriod.sol";
 contract ActivePeriodWrapper {
     using ActivePeriod for ActivePeriod.History;
 
-    ActivePeriod.History activationHistory;
+    ActivePeriod.History internal activationHistory;
 
-    function startNewPeriodFrom(uint256 _enabledFromTime) external {
-        activationHistory.startNewPeriodFrom(_enabledFromTime);
+    function startNextPeriodFrom(uint256 _enabledFromTime) external {
+        activationHistory.startNextPeriodFrom(_enabledFromTime);
     }
 
     function stopCurrentPeriodAt(uint256 _disabledOnTime) external {

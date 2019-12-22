@@ -111,7 +111,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         source.weight = _weight;
 
         // Start activation history with [current block, max block)
-        source.activationHistory.startNewPeriodFrom(getBlockNumber());
+        source.activationHistory.startNextPeriodFrom(getBlockNumber());
 
         emit AddPowerSource(newSourceId, _sourceAddr, _sourceType, _weight);
 
@@ -165,7 +165,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         PowerSource storage source = powerSources[_sourceId];
 
         // Add new activation period with [current block, max block)
-        source.activationHistory.startNewPeriodFrom(getBlockNumber());
+        source.activationHistory.startNextPeriodFrom(getBlockNumber());
 
         emit EnablePowerSource(_sourceId);
     }
