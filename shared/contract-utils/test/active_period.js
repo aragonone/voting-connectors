@@ -11,6 +11,7 @@ const ERROR_BAD_STOP_TIME = 'ACTIVEPERIOD_BAD_STOP_TIME'
 const ERROR_INVALID_SEARCH = 'ACTIVEPERIOD_INVALID_SEARCH'
 
 const MAX_UINT64 = new web3.BigNumber(2).pow(64).sub(new web3.BigNumber(1))
+const NO_END_TIME = MAX_UINT64
 
 contract('ActivePeriod lib', ([_, root]) => {
   let activePeriodWrapper
@@ -21,13 +22,25 @@ contract('ActivePeriod lib', ([_, root]) => {
     const assertFn = shouldBeActive ? assert.isTrue : assert.isFalse
 
     // Check ends
-    assertFn(await activePeriodWrapper.isEnabledAt(from))
-    assertFn(await activePeriodWrapper.isEnabledAt(to))
+    assertFn(
+      await activePeriodWrapper.isEnabledAt(from),
+      `Start time is not valid (expected to be ${shouldBeActive ? 'active' : 'not active'})`
+    )
+    assertFn(
+      await activePeriodWrapper.isEnabledAt(to),
+      `End time is not valid (expected to be ${shouldBeActive ? 'active' : 'not active'})`
+    )
 
     // Randomly check inside
     for (let checkNum = 0; checkNum < 10; ++checkNum) {
       assertFn(await activePeriodWrapper.isEnabledAt(getRandomInt(from, to)))
     }
+  }
+
+  async function assertPeriodTimes(periodIndex, expectedEnabledFrom, expectedDisabledOn) {
+    const [enabledFrom, disabledOn] = await activePeriodWrapper.getPeriod(periodIndex)
+    assert.equal(enabledFrom.toString(), expectedEnabledFrom.toString(), 'Start time of period is not correct')
+    assert.equal(disabledOn.toString(), expectedDisabledOn.toString(), 'End time of period is not correct')
   }
 
   beforeEach('deploy lib wrapper', async () => {
@@ -47,6 +60,7 @@ contract('ActivePeriod lib', ([_, root]) => {
         await assertPeriod({ shouldBeActive: false, from: 0, to: start })
 
         await activePeriodWrapper.startNextPeriodFrom(start)
+        await assertPeriodTimes(0, start, NO_END_TIME)
         await assertPeriod({ shouldBeActive: true, from: start })
 
         // Previous time should still be disabled
@@ -73,7 +87,7 @@ contract('ActivePeriod lib', ([_, root]) => {
         it('starts a new period using a date past the only period', async () => {
           const nextStart = firstEnd + 100
           await activePeriodWrapper.startNextPeriodFrom(nextStart)
-
+          await assertPeriodTimes(1, nextStart, NO_END_TIME)
           await assertPeriod({ shouldBeActive: true, from: nextStart })
 
           // Time between first period and next period should be disabled
@@ -99,7 +113,8 @@ contract('ActivePeriod lib', ([_, root]) => {
     context('when there are multiple periods', () => {
       // Tuples of [from, to]
       const periods = [[100, 200], [300, 400], [500]]
-      const lastStart = periods[periods.length - 1]
+      const initialLastPeriodIndex = periods.length - 1
+      const lastStart = periods[initialLastPeriodIndex]
 
       beforeEach(async () => {
         // Set up periods
@@ -132,7 +147,7 @@ contract('ActivePeriod lib', ([_, root]) => {
         it('starts a new period using a date past last period', async () => {
           const nextStart = lastEnd + 100
           await activePeriodWrapper.startNextPeriodFrom(nextStart)
-
+          await assertPeriodTimes(initialLastPeriodIndex + 1, nextStart, NO_END_TIME)
           await assertPeriod({ shouldBeActive: true, from: nextStart })
 
           // Time between first period and next period should be disabled
@@ -185,6 +200,7 @@ contract('ActivePeriod lib', ([_, root]) => {
           await assertPeriod({ shouldBeActive: true, from: start })
 
           await activePeriodWrapper.stopCurrentPeriodAt(end)
+          await assertPeriodTimes(0, start, end)
           // Period should now be disabled into the future
           await assertPeriod({ shouldBeActive: false, from: end + 1 })
 
