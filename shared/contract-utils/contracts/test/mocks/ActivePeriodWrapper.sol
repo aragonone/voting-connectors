@@ -20,7 +20,7 @@ contract ActivePeriodWrapper {
         return activationHistory.isEnabledAt(_time);
     }
 
-    function getPeriod(uint256 _index) external view returns (uint128 enabledFromTime,  uint128 disabledOnTime) {
+    function getPeriod(uint256 _index) external view returns (uint64 enabledFromTime,  uint64 disabledOnTime) {
         ActivePeriod.Period memory period = activationHistory.getPeriod(_index);
         return (period.enabledFromTime, period.disabledOnTime);
     }
