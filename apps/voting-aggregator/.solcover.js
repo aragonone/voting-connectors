@@ -1,9 +1,9 @@
 module.exports = {
     norpc: true,
-    copyPackages: ['@aragon/os', '@aragonone/voting-connectors-contract-helpers'],
+    copyPackages: ['@aragon/os', '@aragonone/voting-connectors-contract-utils'],
     skipFiles: [
         'test',
         '@aragon/os',
-        '@aragonone/voting-connectors-contract-helpers',
+        '@aragonone/voting-connectors-contract-utils',
     ]
 }
