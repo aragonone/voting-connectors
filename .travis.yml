@@ -34,4 +34,4 @@ jobs:
     - script: npm run coverage:shared
       name: "Shared"
 after_success:
-  - ./node_modules/.bin/lcov-result-merger 'apps/*/coverage/lcov.info' | ./node_modules/.bin/coveralls
+  - ./node_modules/.bin/lcov-result-merger '{apps,shared}/*/coverage/lcov.info' | ./node_modules/.bin/coveralls
