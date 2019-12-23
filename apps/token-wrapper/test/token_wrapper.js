@@ -1,32 +1,50 @@
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { getNewProxyAddress } = require('@aragon/test-helpers/events')
 
 const { deployDao } = require('./helpers/deploy.js')(artifacts)
 
 const ERC20 = artifacts.require('ERC20Sample')
-const ERC20Bad = artifacts.require('ERC20Bad')
+const ERC20Disablable = artifacts.require('ERC20Disablable')
 const TokenWrapper = artifacts.require('TokenWrapper')
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 contract('TokenWrapper', ([_, root, holder, someone]) => {
+  const wrappedName = 'Token Wrapper'
+  const wrappedSymbol = 'TWR'
+  let tokenWrapperBase, tokenWrapper
+
+  before('deploy base', async () => {
+    tokenWrapperBase = await TokenWrapper.new()
+  })
+
+  beforeEach('deploy dao with uninitialized token wrapper', async () => {
+    const { dao, acl } = await deployDao(root)
+
+    const installReceipt = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
+    tokenWrapper = TokenWrapper.at(getNewProxyAddress(installReceipt))
+  })
+
   describe('Wrapping a proper token', () => {
-    let dao, acl, tokenWrapper, erc20
+    let erc20
 
-    before('deploy dao with token wrapper', async () => {
-      ({ dao, acl } = await deployDao(root))
-
-      const tokenWrapperBase = await TokenWrapper.new()
-      const { logs } = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
-      tokenWrapper = TokenWrapper.at(logs.find(l => l.event === 'NewAppProxy').args.proxy)
-
+    beforeEach('initialize token wrapper with token', async () => {
       erc20 = await ERC20.new({ from: holder }) // mints 1M e 18 tokens to sender
-      await tokenWrapper.initialize(erc20.address, 'Token Wrapper', 'TWR')
+      await tokenWrapper.initialize(erc20.address, wrappedName, wrappedSymbol)
+    })
+
+    it('is an erc20', async () => {
+      assert.equal(await tokenWrapper.name(), wrappedName)
+      assert.equal(await tokenWrapper.symbol(), wrappedSymbol)
+      assert.equal((await tokenWrapper.decimals()).toString(), (await erc20.decimals()).toString())
+    })
+
+    it('is a forwarder', async () => {
+      assert.isTrue(await tokenWrapper.isForwarder())
     })
 
     it('has an erc20 token', async () => {
-      assert.isTrue(await tokenWrapper.isForwarder())
       assert.equal(await tokenWrapper.depositedToken(), erc20.address)
-      assert.equal(await tokenWrapper.decimals(), 18) // hardcoded in ERC20Sample
     })
 
     it('can mint tokens', async () => {
@@ -46,14 +64,20 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
     })
 
     it('can burn tokens', async () => {
+      // First add wrapped tokens
+      const wrappedAmount = 2e18
+      await erc20.approve(tokenWrapper.address, wrappedAmount, { from: holder })
+      await tokenWrapper.deposit(wrappedAmount, { from: holder })
+
       const previousBalance = await tokenWrapper.balanceOf(holder)
       const previousSupply = await tokenWrapper.totalSupply()
 
-      const amount = new web3.BigNumber(1e18)
-      await tokenWrapper.withdraw(amount, { from: holder })
+      // Withdraw
+      const unwrappedAmount = new web3.BigNumber(1e18)
+      await tokenWrapper.withdraw(unwrappedAmount, { from: holder })
 
-      assert.equal((await tokenWrapper.balanceOf(holder)).toString(), previousBalance.sub(amount), 'Holder balance doesn\'t match')
-      assert.equal((await tokenWrapper.totalSupply()).toString(), previousSupply.sub(amount), 'Total supply doesn\'t match')
+      assert.equal((await tokenWrapper.balanceOf(holder)).toString(), previousBalance.sub(unwrappedAmount), "Holder balance doesn't match")
+      assert.equal((await tokenWrapper.totalSupply()).toString(), previousSupply.sub(unwrappedAmount), "Total supply doesn't match")
 
       assert.equal((await erc20.balanceOf(holder)).toString(), 999999e18)
     })
@@ -64,29 +88,32 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
     })
   })
 
-  describe('Wrapping a proper token', () => {
-    let dao, acl, tokenWrapper, erc20
+  describe('Wrapping a failing token', () => {
+    let erc20
 
-    before('deploy dao with token wrapper', async () => {
-      ({ dao, acl } = await deployDao(root))
+    beforeEach('initialize token wrapper with disablable token', async () => {
+      erc20 = await ERC20Disablable.new({ from: holder }) // mints 1M e 18 tokens to sender
+      await tokenWrapper.initialize(erc20.address, wrappedName, wrappedSymbol)
+    })
 
-      const tokenWrapperBase = await TokenWrapper.new()
-      const { logs } = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
-      tokenWrapper = TokenWrapper.at(logs.find(l => l.event === 'NewAppProxy').args.proxy)
+    it('can not mint if transfer fails', async () => {
+      // approve
+      const amount = 1e18
+      await erc20.approve(tokenWrapper.address, amount, { from: holder })
 
-      erc20 = await ERC20Bad.new({ from: holder }) // mints 1M e 18 tokens to sender
-      await tokenWrapper.initialize(erc20.address, 'Token Wrapper', 'TWR')
+      // disable token and try to mint
+      await erc20.disable(true)
+      await assertRevert(tokenWrapper.deposit(amount, { from: holder }), 'TW_TOKEN_TRANSFER_FROM_FAILED')
     })
 
     it('can not burn if transfer fails', async () => {
       // mint
-      await erc20.enable(true)
       const amount = 1e18
       await erc20.approve(tokenWrapper.address, amount, { from: holder })
       await tokenWrapper.deposit(amount, { from: holder })
 
       // disable token and try to burn
-      await erc20.enable(false)
+      await erc20.disable(true)
       await assertRevert(tokenWrapper.withdraw(amount, { from: holder }), 'TW_TOKEN_TRANSFER_FAILED')
     })
   })

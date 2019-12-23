@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 
-contract ERC20Bad is ERC20 {
+contract ERC20Disablable is ERC20 {
     string public name = "Sample token";
     string public symbol = "SPL";
     uint8 public decimals = 18;
@@ -17,12 +17,8 @@ contract ERC20Bad is ERC20 {
         balances[msg.sender] = _totalSupply;
     }
 
-    function totalSupply() public view returns (uint ts) {
-        ts = _totalSupply;
-    }
-
-    function balanceOf(address _owner) public view returns (uint256 balance) {
-        return balances[_owner];
+    function enable(bool _enabled) external {
+        enabled = _enabled;
     }
 
     function transfer(address _to, uint256 _amount) public returns (bool success) {
@@ -65,11 +61,15 @@ contract ERC20Bad is ERC20 {
         }
     }
 
-    function enable(bool _enabled) external {
-        enabled = _enabled;
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+        remaining = allowed[_owner][_spender];
     }
 
-    function allowance(address _owner, address _spender) public view returns (uint remaining) {
-        remaining = allowed[_owner][_spender];
+    function balanceOf(address _owner) public view returns (uint256 balance) {
+        return balances[_owner];
+    }
+
+    function totalSupply() public view returns (uint256 ts) {
+        ts = _totalSupply;
     }
 }
