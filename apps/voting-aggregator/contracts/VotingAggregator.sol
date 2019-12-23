@@ -12,25 +12,30 @@ import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 import "@aragonone/voting-connectors-contract-utils/contracts/ActivePeriod.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
-import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/StaticInvoke.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 
 import "./interfaces/IERC900History.sol";
 
 
 /**
  * @title VotingAggregator
- * @notice Voting power aggregator across many sources that provides a "view-only" checkpointed ERC20 implementation
+ * @notice Voting power aggregator across many sources that provides a "view-only" checkpointed
+ *         ERC20 implementation.
  */
 contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
     using StaticInvoke for address;
     using ActivePeriod for ActivePeriod.History;
 
-    // TODO: just use keccak hashes
+    /* Hardcoded constants to save gas
     bytes32 public constant ADD_POWER_SOURCE_ROLE = keccak256("ADD_POWER_SOURCE_ROLE");
     bytes32 public constant MANAGE_POWER_SOURCE_ROLE = keccak256("MANAGE_POWER_SOURCE_ROLE");
     bytes32 public constant MANAGE_WEIGHTS_ROLE = keccak256("MANAGE_WEIGHTS_ROLE");
+    */
+    bytes32 public constant ADD_POWER_SOURCE_ROLE = 0x10f7c4af0b190fdd7eb73fa36b0e280d48dc6b8d355f89769b4f1a50a61d1929;
+    bytes32 public constant MANAGE_POWER_SOURCE_ROLE = 0x79ac9d2706bbe6bcdb60a65ba8145a498f6d506aaa455baa7675dff5779cb99f;
+    bytes32 public constant MANAGE_WEIGHTS_ROLE = 0xa36fcade8375289791865312a33263fdc82d07e097c13524c9d6436c0de396ff;
 
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
     string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";

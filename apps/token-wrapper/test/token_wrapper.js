@@ -23,7 +23,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
   it('has an erc20 token', async () => {
     assert.isTrue(await tokenWrapper.isForwarder())
-    assert.equal(await tokenWrapper.outsideToken(), erc20.address)
+    assert.equal(await tokenWrapper.depositedToken(), erc20.address)
   })
 
   it('can mint tokens', async () => {

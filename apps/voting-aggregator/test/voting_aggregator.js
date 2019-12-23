@@ -1,5 +1,5 @@
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
-const { getEventArgument } = require('@aragon/test-helpers/events')
+const { getEventArgument, getNewProxyAddress } = require('@aragon/test-helpers/events')
 const { assertAmountOfEvents } = require('@aragon/test-helpers/assertEvent')(web3)
 const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
 
@@ -23,17 +23,32 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
   const ERC20WithCheckpointing = 0
   const ERC900 = 1
 
-  let votingAggregator
+  let votingAggregatorBase, votingAggregator
+  let ADD_POWER_SOURCE_ROLE, MANAGE_POWER_SOURCE_ROLE, MANAGE_WEIGHTS_ROLE
+
+  before(async () => {
+    votingAggregatorBase = await VotingAggregator.new()
+
+    ADD_POWER_SOURCE_ROLE = await votingAggregatorBase.ADD_POWER_SOURCE_ROLE()
+    MANAGE_POWER_SOURCE_ROLE = await votingAggregatorBase.MANAGE_POWER_SOURCE_ROLE()
+    MANAGE_WEIGHTS_ROLE = await votingAggregatorBase.MANAGE_WEIGHTS_ROLE()
+  })
 
   beforeEach('deploy dao with voting aggregator', async () => {
     const { dao, acl } = await deployDao(root)
 
-    const votingAggregatorBase = await VotingAggregator.new()
-    const { logs } = await dao.newAppInstance('0x1234', votingAggregatorBase.address, '0x', false, { from: root })
-    votingAggregator = VotingAggregator.at(logs.find(l => l.event === 'NewAppProxy').args.proxy)
-    await acl.createPermission(root, votingAggregator.address, await votingAggregator.ADD_POWER_SOURCE_ROLE(), root, { from: root })
-    await acl.createPermission(root, votingAggregator.address, await votingAggregator.MANAGE_POWER_SOURCE_ROLE(), root, { from: root })
-    await acl.createPermission(root, votingAggregator.address, await votingAggregator.MANAGE_WEIGHTS_ROLE(), root, { from: root })
+    const installReceipt = await dao.newAppInstance('0x1234', votingAggregatorBase.address, '0x', false, { from: root })
+    votingAggregator = VotingAggregator.at(getNewProxyAddress(installReceipt))
+
+    await acl.createPermission(root, votingAggregator.address, ADD_POWER_SOURCE_ROLE, root, { from: root })
+    await acl.createPermission(root, votingAggregator.address, MANAGE_POWER_SOURCE_ROLE, root, { from: root })
+    await acl.createPermission(root, votingAggregator.address, MANAGE_WEIGHTS_ROLE, root, { from: root })
+  })
+
+  it('has correct roles encoded', async () => {
+    assert.equal(ADD_POWER_SOURCE_ROLE, web3.sha3('ADD_POWER_SOURCE_ROLE'), 'ADD_POWER_SOURCE_ROLE not encoded correctly')
+    assert.equal(MANAGE_POWER_SOURCE_ROLE, web3.sha3('MANAGE_POWER_SOURCE_ROLE'), 'MANAGE_POWER_SOURCE_ROLE not encoded correctly')
+    assert.equal(MANAGE_WEIGHTS_ROLE, web3.sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
   })
 
   describe('initialize', () => {
