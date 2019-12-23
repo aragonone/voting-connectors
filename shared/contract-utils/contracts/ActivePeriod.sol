@@ -14,10 +14,10 @@ pragma solidity ^0.4.24;
  *   - Staking (https://github.com/aragon/staking/blob/master/contracts/Checkpointing.sol)
  */
 library ActivePeriod {
-    uint256 private constant MAX_UINT128 = uint256(uint128(-1));
+    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
 
     string private constant ERROR_TIME_TOO_BIG = "ACTIVEPERIOD_TIME_TOO_BIG";
-    string private constant ERROR_BAD_START_TIME = "ACTIVEPERIOD_BAD_START_TIME";
+    string private constant ERROR_LAST_PERIOD_ACTIVE = "ACTIVEPERIOD_LAST_PERIOD_ACTIVE";
     string private constant ERROR_NO_PERIODS = "ACTIVEPERIOD_NO_PERIODS";
     string private constant ERROR_LAST_NOT_ACTIVE = "ACTIVEPERIOD_LAST_NOT_ACTIVE";
     string private constant ERROR_BAD_STOP_TIME = "ACTIVEPERIOD_BAD_STOP_TIME";
@@ -25,49 +25,52 @@ library ActivePeriod {
 
     // Period of [enabledFromTime, disabledOnTime)
     struct Period {
-        uint128 enabledFromTime;
-        uint128 disabledOnTime;
+        uint64 enabledFromTime;
+        uint64 disabledOnTime;
     }
 
     struct History {
         Period[] history;
     }
 
-    function startNewPeriodFrom(History storage _self, uint256 _enabledFromTime) internal {
-        require(_enabledFromTime <= MAX_UINT128, ERROR_TIME_TOO_BIG);
+    function startNextPeriodFrom(History storage _self, uint256 _enabledFromTime) internal {
+        require(_enabledFromTime <= MAX_UINT64, ERROR_TIME_TOO_BIG);
 
         Period[] storage history = _self.history;
-        if (history.length > 0) {
+        uint256 historyLength = history.length;
+        if (historyLength > 0) {
             // Make sure there's no currently activated period
-            Period storage lastPeriod = history[history.length - 1];
-            require(lastPeriod.disabledOnTime <= _enabledFromTime, ERROR_BAD_START_TIME);
+            Period storage lastPeriod = history[historyLength - 1];
+            // Note that the disabledOnTime is not included in a period, so we include equality
+            require(uint256(lastPeriod.disabledOnTime) <= _enabledFromTime, ERROR_LAST_PERIOD_ACTIVE);
         }
 
         _self.history.push(
             Period({
-                enabledFromTime: uint128(_enabledFromTime),
-                disabledOnTime: uint128(MAX_UINT128)
+                enabledFromTime: uint64(_enabledFromTime),
+                disabledOnTime: uint64(MAX_UINT64)
             })
         );
     }
 
     function stopCurrentPeriodAt(History storage _self, uint256 _disabledOnTime) internal {
-        require(_disabledOnTime <= MAX_UINT128, ERROR_TIME_TOO_BIG);
-        uint128 castedStopTime = uint128(_disabledOnTime);
+        require(_disabledOnTime <= MAX_UINT64, ERROR_TIME_TOO_BIG);
 
         Period[] storage history = _self.history;
-        require(history.length > 0, ERROR_NO_PERIODS);
-        Period storage currentPeriod = history[history.length - 1];
+        uint256 historyLength = history.length;
+        require(historyLength > 0, ERROR_NO_PERIODS);
+        Period storage currentPeriod = history[historyLength - 1];
 
         // Make sure there is a currently activated period to stop
-        require(currentPeriod.disabledOnTime == MAX_UINT128, ERROR_LAST_NOT_ACTIVE);
-        require(currentPeriod.enabledFromTime < castedStopTime, ERROR_BAD_STOP_TIME);
+        require(uint256(currentPeriod.disabledOnTime) == MAX_UINT64, ERROR_LAST_NOT_ACTIVE);
+        // Note that the enabledFromTime is included in a period, so we disallow equality
+        require(uint256(currentPeriod.enabledFromTime) < _disabledOnTime, ERROR_BAD_STOP_TIME);
 
-        currentPeriod.disabledOnTime = castedStopTime;
+        currentPeriod.disabledOnTime = uint64(_disabledOnTime);
     }
 
     function isEnabledAt(History storage _self, uint256 _time) internal view returns (bool) {
-        require(_time <= MAX_UINT128, ERROR_TIME_TOO_BIG);
+        require(_time <= MAX_UINT64, ERROR_TIME_TOO_BIG);
 
         return _isEnabledAt(_self, _time);
     }
@@ -115,9 +118,9 @@ library ActivePeriod {
                 return true;
             }
 
-            if (_time >= midPoint.disabledOnTime) {
+            if (_time >= uint256(midPoint.disabledOnTime)) {
                 low = mid;
-            } else if (_time < midPoint.enabledFromTime) {
+            } else if (_time < uint256(midPoint.enabledFromTime)) {
                 // Note that we don't need SafeMath here because mid must always be greater than 0
                 // from the while condition
                 high = mid - 1;
@@ -131,6 +134,7 @@ library ActivePeriod {
     }
 
     function _inActivePeriod(Period storage _period, uint256 _time) private view returns (bool) {
-        return _time >= _period.enabledFromTime && _time < _period.disabledOnTime;
+        // [enabledFromTime, disabledOnTime)
+        return uint256(_period.enabledFromTime) <= _time && _time < uint256(_period.disabledOnTime);
     }
 }
