@@ -1,15 +1,11 @@
 module.exports = {
   norpc: true,
-  copyPackages: [
-    '@aragon/os',
-    '@aragon/apps-voting',
-    '@aragonone/voting-connectors-contract-utils'
-  ],
+  copyPackages: ['@aragon/os', '@aragonone/voting-connectors-contract-utils'],
   skipFiles: [
     'examples',
+    'interfaces',
     'test',
     '@aragon/os',
-    '@aragon/apps-voting',
     '@aragonone/voting-connectors-contract-utils',
   ]
 }
