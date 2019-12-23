@@ -33,16 +33,16 @@ library Checkpointing {
     function addCheckpoint(History storage _self, uint256 _time, uint256 _value) internal {
         require(_time <= MAX_UINT64, ERROR_TIME_TOO_BIG);
         require(_value <= MAX_UINT192, ERROR_VALUE_TOO_BIG);
-
-        uint256 length = _self.history.length;
         uint64 castedTime = uint64(_time);
         uint192 castedValue = uint192(_value);
 
+        uint256 length = _self.history.length;
         if (length == 0) {
             _self.history.push(Checkpoint(castedTime, castedValue));
         } else {
             Checkpoint storage currentCheckpoint = _self.history[length - 1];
-            uint64 currentCheckpointTime = currentCheckpoint.time;
+            uint256 currentCheckpointTime = uint256(currentCheckpoint.time);
+
             if (_time > currentCheckpointTime) {
                 _self.history.push(Checkpoint(castedTime, castedValue));
             } else if (_time == currentCheckpointTime) {
@@ -90,12 +90,12 @@ library Checkpointing {
         // Check last checkpoint
         uint256 lastIndex = length - 1;
         Checkpoint storage lastCheckpoint = _self.history[lastIndex];
-        if (_time >= lastCheckpoint.time) {
+        if (_time >= uint256(lastCheckpoint.time)) {
             return uint256(lastCheckpoint.value);
         }
 
         // Check first checkpoint (if not already checked with the above check on last)
-        if (length == 1 || _time < _self.history[0].time) {
+        if (length == 1 || _time < uint256(_self.history[0].time)) {
             return 0;
         }
 
@@ -107,7 +107,7 @@ library Checkpointing {
         while (high > low) {
             uint256 mid = (high + low + 1) / 2; // average, ceil round
             Checkpoint storage checkpoint = _self.history[mid];
-            uint256 midTime = checkpoint.time;
+            uint256 midTime = uint256(checkpoint.time);
 
             if (_time > midTime) {
                 low = mid;
