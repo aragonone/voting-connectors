@@ -35,6 +35,13 @@
       "wsRPC": "wss://rinkeby.eth.aragon.network/ws"
     }
   },
-  "roles": [],
+  "roles": [
+    {
+      "name": "Reset all sampled balances",
+      "id": "RESET_SAMPLE_ROLE",
+      "params": [
+      ]
+    }
+  ],
   "path": "contracts/NFTSample.sol"
 }
