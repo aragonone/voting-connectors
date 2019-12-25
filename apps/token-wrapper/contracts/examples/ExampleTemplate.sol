@@ -47,7 +47,7 @@ contract ExampleTemplate is TemplateBase {
     constructor(ENS ens) TemplateBase(DAOFactory(0), ens) public {
     }
 
-    function newInstance(ERC20 _wrappedToken) public {
+    function newInstance(ERC20 _depositedToken) public {
         Kernel dao = fac.newDAO(this);
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
@@ -60,7 +60,7 @@ contract ExampleTemplate is TemplateBase {
         Voting voting = Voting(dao.newAppInstance(votingAppId, latestVersionAppBase(votingAppId)));
 
         // Initialize apps
-        tokenWrapper.initialize(_wrappedToken, "Org token", "ORG");
+        tokenWrapper.initialize(_depositedToken, "Wrapped org token", "wORG");
         IVotingGenericInitializer(voting).initialize(tokenWrapper, 50 * PCT, 20 * PCT, 1 days);
 
         // HACK: create a random permission on TokenWrapper so it is detected as an app
