@@ -1,78 +1,30 @@
 import React from 'react'
 import { useAragonApi } from '@aragon/api-react'
-import {
-  Button,
-  IconPlus,
-  Header,
-  Split,
-  GU,
-  textStyle,
-  useLayout,
-  useTheme,
-  Tag,
-  SyncIndicator,
-} from '@aragon/ui'
+import { Main, Split, SyncIndicator, GU } from '@aragon/ui'
 import { AppLogicProvider, useAppLogic } from './app-logic'
 import NoWrappedTokens from './screens/NoWrappedTokens'
 import Holders from './screens/Holders'
 import Panel from './components/ActionsPanel'
+import AppHeader from './components/AppHeader'
 import InfoBox from './components/InfoBox'
 import { IdentityProvider } from './components/IdentityManager/IdentityManager'
 
 function App() {
-  const { appState } = useAragonApi()
-  const { holders, isSyncing, outsideToken, wrappedToken } = appState
+  const { appState, guiStyle } = useAragonApi()
   const { actions, wrapTokensPanel, unwrapTokensPanel } = useAppLogic()
-  const { layoutName } = useLayout()
-  const theme = useTheme()
+
+  const { holders, isSyncing, outsideToken, wrappedToken } = appState
+  const { appearance } = guiStyle
 
   const appStateReady = outsideToken && wrappedToken
   const showHolders = appStateReady && holders && holders.length > 0
 
   return (
-    <React.Fragment>
+    <Main theme={appearance}>
       {showHolders && <SyncIndicator visible={isSyncing} />}
-      <Header
-        primary={
-          <div
-            css={`
-              display: flex;
-              align-items: center;
-              flex: 1 1 auto;
-              width: 0;
-            `}
-          >
-            <h1
-              css={`
-                ${textStyle(layoutName === 'small' ? 'title3' : 'title2')};
-                flex: 0 1 auto;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                color: ${theme.content};
-                margin-right: ${1 * GU}px;
-              `}
-            >
-              Token Wrapper
-            </h1>
-            <div css="flex-shrink: 0">
-              {wrappedToken && wrappedToken.symbol && (
-                <Tag mode="identifier">{wrappedToken.symbol}</Tag>
-              )}
-            </div>
-          </div>
-        }
-        secondary={
-          showHolders && (
-            <Button
-              mode="strong"
-              label="Wrap tokens"
-              icon={<IconPlus />}
-              onClick={wrapTokensPanel.requestOpen}
-              display={layoutName === 'small' ? 'icon' : 'label'}
-            />
-          )
-        }
+      <AppHeader
+        onWrapHolder={showHolders ? wrapTokensPanel.requestOpen : null}
+        tokenSymbol={wrappedToken && wrappedToken.symbol}
       />
       <Split
         primary={
@@ -130,7 +82,7 @@ function App() {
           />
         </React.Fragment>
       )}
-    </React.Fragment>
+    </Main>
   )
 }
 
