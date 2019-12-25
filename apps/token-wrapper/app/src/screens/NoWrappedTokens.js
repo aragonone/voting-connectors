@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Button, EmptyStateCard, GU, LoadingRing } from '@aragon/ui'
 import emptyStateImg from '../assets/empty-state.png'
 
@@ -42,9 +43,11 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({
           )
         }
         action={
-          <Button wide mode="strong" onClick={onWrapTokens}>
-            Wrap token
-          </Button>
+          onWrapTokens && (
+            <Button wide mode="strong" onClick={onWrapTokens}>
+              Wrap tokens
+            </Button>
+          )
         }
         illustration={
           <img
@@ -60,5 +63,9 @@ const NoWrappedTokens = React.memo(function NoWrappedTokens({
     </React.Fragment>
   )
 })
+NoWrappedTokens.propTypes = {
+  isSyncing: PropTypes.bool,
+  onWrapTokens: PropTypes.func,
+}
 
 export default NoWrappedTokens

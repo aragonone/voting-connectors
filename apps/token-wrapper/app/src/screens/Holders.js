@@ -11,8 +11,8 @@ import {
 } from '@aragon/ui'
 import { useConnectedAccount } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
-import You from '../components/You'
 import { useIdentity } from '../components/IdentityManager/IdentityManager'
+import You from '../components/You'
 import { formatBalance } from '../utils'
 import { addressesEqual } from '../web3-utils'
 

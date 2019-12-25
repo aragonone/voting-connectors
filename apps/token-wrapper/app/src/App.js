@@ -13,10 +13,10 @@ function App() {
   const { appState, guiStyle } = useAragonApi()
   const { actions, wrapTokensPanel, unwrapTokensPanel } = useAppLogic()
 
-  const { holders, isSyncing, outsideToken, wrappedToken } = appState
+  const { depositedToken, holders, isSyncing, wrappedToken } = appState
   const { appearance } = guiStyle
 
-  const appStateReady = outsideToken && wrappedToken
+  const appStateReady = depositedToken && wrappedToken
   const showHolders = appStateReady && holders && holders.length > 0
 
   return (
@@ -37,13 +37,16 @@ function App() {
           ) : (
             <NoWrappedTokens
               isSyncing={isSyncing}
-              onWrapTokens={wrapTokensPanel.requestOpen}
+              onWrapTokens={appStateReady ? wrapTokensPanel.requestOpen : null}
             />
           )
         }
         secondary={
           appStateReady && (
-            <InfoBox outsideToken={outsideToken} wrappedToken={wrappedToken} />
+            <InfoBox
+              depositedToken={depositedToken}
+              wrappedToken={wrappedToken}
+            />
           )
         }
       />
@@ -51,34 +54,34 @@ function App() {
       {appStateReady && (
         <React.Fragment>
           <Panel
-            panelState={wrapTokensPanel}
-            onAction={actions.wrapTokens}
-            outsideToken={outsideToken}
-            wrappedToken={wrappedToken}
             action="Wrap"
+            depositedToken={depositedToken}
             info={
               <React.Fragment>
                 <p>
-                  Wrap {outsideToken.symbol} into an ERC20-compliant token used
-                  for governance within this organization.
+                  Wrap {depositedToken.symbol} into an ERC20-compliant token
+                  used for governance within this organization.
                 </p>
                 <p
                   css={`
                     margin-top: ${1 * GU}px;
                   `}
                 >
-                  1 {outsideToken.symbol} = 1 {wrappedToken.symbol}.
+                  1 {depositedToken.symbol} = 1 {wrappedToken.symbol}.
                 </p>
               </React.Fragment>
             }
+            onAction={actions.wrapTokens}
+            panelState={wrapTokensPanel}
+            wrappedToken={wrappedToken}
           />
           <Panel
-            panelState={unwrapTokensPanel}
-            onAction={actions.unwrapTokens}
-            outsideToken={outsideToken}
-            wrappedToken={wrappedToken}
             action="Unwrap"
-            info={`Recover your ${outsideToken.symbol} by unwrapping your ${wrappedToken.symbol}.`}
+            depositedToken={depositedToken}
+            info={`Recover your ${depositedToken.symbol} by unwrapping ${wrappedToken.symbol}.`}
+            onAction={actions.unwrapTokens}
+            panelState={unwrapTokensPanel}
+            wrappedToken={wrappedToken}
           />
         </React.Fragment>
       )}
