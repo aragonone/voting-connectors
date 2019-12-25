@@ -4,7 +4,7 @@ import { Box, GU, TokenBadge, useTheme, textStyle } from '@aragon/ui'
 import wrap from '../assets/wrap.svg'
 import { fromDecimals } from '../utils'
 
-function InfoBox({ outsideToken, wrappedToken }) {
+function InfoBox({ depositedToken, wrappedToken }) {
   const network = useNetwork()
   const theme = useTheme()
 
@@ -27,9 +27,9 @@ function InfoBox({ outsideToken, wrappedToken }) {
         >
           <TokenBadge
             compact
-            address={outsideToken.address}
+            address={depositedToken.address}
             network={network && network.type}
-            symbol={outsideToken.symbol}
+            symbol={depositedToken.symbol}
           />
           <span>
             <img src={wrap} />
@@ -49,9 +49,9 @@ function InfoBox({ outsideToken, wrappedToken }) {
           You can wrap{' '}
           <TokenBadge
             compact
-            address={outsideToken.address}
+            address={depositedToken.address}
             network={network && network.type}
-            symbol={outsideToken.symbol}
+            symbol={depositedToken.symbol}
           />{' '}
           tokens for{' '}
           <TokenBadge
@@ -81,7 +81,7 @@ function InfoBox({ outsideToken, wrappedToken }) {
             margin-top: ${1 * GU}px;
           `}
         >
-          1 {outsideToken.symbol} = 1 {wrappedToken.symbol}
+          1 {depositedToken.symbol} = 1 {wrappedToken.symbol}
         </p>
       </Box>
       <Box heading="Token Info">

@@ -22,14 +22,18 @@ startDevchain() {
   echo Starting devchain...
   npx aragon devchain --verbose > /dev/null &
   pid=$!
-  sleep 3
+  sleep 5
   echo \ \ Running devchain with pid ${pid}
+}
+
+compile() {
+  npm run compile
 }
 
 deployToken() {
   echo Deploying ERC20 token...
   WRAPPED_TOKEN=$(npx truffle exec scripts/deployToken.js --network rpc | tail -1)
-  echo \ \ Wrapped ERC20 token: ${WRAPPED_TOKEN}
+  echo \ \ External ERC20 token: ${WRAPPED_TOKEN}
 }
 
 run() {
@@ -51,6 +55,7 @@ runUsingHTTP() {
   npx aragon run --http localhost:8001 --http-served-from ./dist --template ExampleTemplate --template-init @ARAGON_ENS --template-new-instance newInstance --template-args ${WRAPPED_TOKEN} --env default
 }
 
+compile
 startDevchain
 deployToken
 run
