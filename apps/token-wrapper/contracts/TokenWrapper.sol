@@ -14,6 +14,7 @@ import "@aragonone/voting-connectors-contract-utils/contracts/Checkpointing.sol"
 import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithDecimals.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/CheckpointingHelpers.sol";
 
 
 /**
@@ -27,6 +28,7 @@ import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20W
  */
 contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
+    using CheckpointingHelpers for uint256;
     using SafeERC20 for ERC20;
     using Checkpointing for Checkpointing.History;
 
@@ -87,9 +89,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
         uint64 currentBlock = getBlockNumber64();
-        // TODO: safe casts to uint192
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, uint192(newBalance));
-        totalSupplyHistory.addCheckpoint(currentBlock, uint192(newTotalSupply));
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192());
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192());
 
         emit Deposit(msg.sender, _amount);
     }
@@ -111,9 +112,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
         uint64 currentBlock = getBlockNumber64();
-        // TODO: safe casts to uint192
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, uint192(newBalance));
-        totalSupplyHistory.addCheckpoint(currentBlock, uint192(newTotalSupply));
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192());
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192());
 
         // Then return ERC20 tokens
         require(depositedToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
