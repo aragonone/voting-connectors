@@ -86,9 +86,10 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 currentTotalSupply = totalSupply();
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
-        uint256 currentBlock = getBlockNumber();
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance);
-        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply);
+        uint64 currentBlock = getBlockNumber64();
+        // TODO: safe casts to uint192
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, uint192(newBalance));
+        totalSupplyHistory.addCheckpoint(currentBlock, uint192(newTotalSupply));
 
         emit Deposit(msg.sender, _amount);
     }
@@ -109,9 +110,10 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 currentTotalSupply = totalSupply();
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
-        uint256 currentBlock = getBlockNumber();
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance);
-        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply);
+        uint64 currentBlock = getBlockNumber64();
+        // TODO: safe casts to uint192
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, uint192(newBalance));
+        totalSupplyHistory.addCheckpoint(currentBlock, uint192(newTotalSupply));
 
         // Then return ERC20 tokens
         require(depositedToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
@@ -124,7 +126,7 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
 
     function balanceOf(address _owner) public view returns (uint256) {
-        return _balanceOfAt(_owner, getBlockNumber());
+        return _balanceOfAt(_owner, getBlockNumber64());
     }
 
     function decimals() public view returns (uint8) {
@@ -133,17 +135,17 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     }
 
     function totalSupply() public view returns (uint256) {
-        return _totalSupplyAt(getBlockNumber());
+        return _totalSupplyAt(getBlockNumber64());
     }
 
     // Checkpointed fns
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
 
-    function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256) {
+    function balanceOfAt(address _owner, uint64 _blockNumber) public view returns (uint256) {
         return _balanceOfAt(_owner, _blockNumber);
     }
 
-    function totalSupplyAt(uint256 _blockNumber) public view returns (uint256) {
+    function totalSupplyAt(uint64 _blockNumber) public view returns (uint256) {
         return _totalSupplyAt(_blockNumber);
     }
 
@@ -187,11 +189,11 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
 
     // Internal fns
 
-    function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
+    function _balanceOfAt(address _owner, uint64 _blockNumber) internal view returns (uint256) {
         return balancesHistory[_owner].getValueAt(_blockNumber);
     }
 
-    function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
+    function _totalSupplyAt(uint64 _blockNumber) internal view returns (uint256) {
         return totalSupplyHistory.getValueAt(_blockNumber);
     }
 }

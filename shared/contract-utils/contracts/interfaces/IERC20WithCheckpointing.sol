@@ -8,6 +8,6 @@ import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 
 contract IERC20WithCheckpointing is ERC20 {
-    function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256);
-    function totalSupplyAt(uint256 _blockNumber) public view returns (uint256);
+    function balanceOfAt(address _owner, uint64 _blockNumber) public view returns (uint256);
+    function totalSupplyAt(uint64 _blockNumber) public view returns (uint256);
 }
