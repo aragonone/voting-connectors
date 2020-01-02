@@ -12,6 +12,7 @@ const Staking = artifacts.require('StakingMock')
 const ERROR_ALREADY_INITIALIZED = 'INIT_ALREADY_INITIALIZED'
 const ERROR_AUTH_FAILED = 'APP_AUTH_FAILED'
 const ERROR_NO_POWER_SOURCE = 'VA_NO_POWER_SOURCE'
+const ERROR_POWER_SOURCE_ALREADY_ADDED = 'VA_POWER_SOURCE_ALREADY_ADDED'
 const ERROR_POWER_SOURCE_NOT_CONTRACT = 'VA_POWER_SOURCE_NOT_CONTRACT'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
 const ERROR_SAME_WEIGHT = 'VA_SAME_WEIGHT'
@@ -113,6 +114,14 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
         assert.equal(powerSource[1], type, 'source type mismatch')
         assert.equal(powerSource[2].toString(), weight, 'weight mismatch')
         assert.equal(powerSource[3].toString(), 1, 'history length mismatch')
+      })
+
+      it('fails to add power source if it has already been added', async () => {
+        await votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, 1, { from: root })
+        await assertRevert(
+          votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_POWER_SOURCE_ALREADY_ADDED
+        )
       })
     })
 

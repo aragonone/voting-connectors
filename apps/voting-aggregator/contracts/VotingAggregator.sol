@@ -38,6 +38,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     bytes32 public constant MANAGE_WEIGHTS_ROLE = 0xa36fcade8375289791865312a33263fdc82d07e097c13524c9d6436c0de396ff;
 
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
+    string private constant ERROR_POWER_SOURCE_ALREADY_ADDED = "VA_POWER_SOURCE_ALREADY_ADDED";
     string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
     string private constant ERROR_ZERO_WEIGHT = "VA_ZERO_WEIGHT";
     string private constant ERROR_SAME_WEIGHT = "VA_SAME_WEIGHT";
@@ -66,6 +67,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     string public symbol;
     uint8 public decimals;
 
+    mapping (address => bool) public powerSourceAdded;
     mapping (uint256 => PowerSource) internal powerSources;
     uint256 public powerSourcesLength;
 
@@ -105,6 +107,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         authP(ADD_POWER_SOURCE_ROLE, arr(_sourceAddr, _weight))
         returns (uint256)
     {
+        require(!powerSourceAdded[_sourceAddr], ERROR_POWER_SOURCE_ALREADY_ADDED);
         require(isContract(_sourceAddr), ERROR_POWER_SOURCE_NOT_CONTRACT);
         require(_weight > 0, ERROR_ZERO_WEIGHT);
 
@@ -117,6 +120,9 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
         // Start activation history with [current block, max block)
         source.activationHistory.startNextPeriodFrom(getBlockNumber());
+
+        // Remember that this source address has been added, to disallow adding duplicate sources
+        powerSourceAdded[_sourceAddr] = true;
 
         emit AddPowerSource(newSourceId, _sourceAddr, _sourceType, _weight);
 
