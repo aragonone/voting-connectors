@@ -1,9 +1,12 @@
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { BN } = require('web3-utils')
+
+const { assertRevert } = require('@aragonone/voting-connectors-contract-utils/test/helpers/assertThrow')
+const { getNewProxyAddress } = require('@aragon/test-helpers/events')
 const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
 const { getNewProxyAddress } = require('@aragon/test-helpers/events')
 const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
 
-const { deployDao } = require('./helpers/deploy.js')(artifacts)
+const { deployDao } = require('@aragonone/voting-connectors-contract-utils/test/helpers/deploy.js')(artifacts)
 
 const ERC20 = artifacts.require('ERC20Sample')
 const ERC20Disablable = artifacts.require('ERC20Disablable')
@@ -11,6 +14,9 @@ const TokenWrapper = artifacts.require('TokenWrapper')
 const ExecutionTarget = artifacts.require('ExecutionTarget')
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+const bn = x => new BN(x)
+const bigExp = (x, y) => bn(x).mul(bn(10).pow(bn(y)))
 
 contract('TokenWrapper', ([_, root, holder, someone]) => {
   const wrappedName = 'Token Wrapper'
@@ -26,7 +32,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
   beforeEach('deploy dao with uninitialized token wrapper', async () => {
     const installReceipt = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
-    tokenWrapper = TokenWrapper.at(getNewProxyAddress(installReceipt))
+    tokenWrapper = await TokenWrapper.at(getNewProxyAddress(installReceipt))
   })
 
   describe('App is not initialized yet', () => {
@@ -95,8 +101,8 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
       it('fails to forward if wrapped balance is zero', async () => {
         const executionTarget = await ExecutionTarget.new()
 
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
-        const script = encodeCallScript([action])
+      const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
+      const script = encodeCallScript([action])
 
         await assertRevert(tokenWrapper.forward(script, { from: holder }), 'TW_CAN_NOT_FORWARD')
       })
@@ -142,7 +148,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     it('can not burn invalid amounts', async () => {
       await assertRevert(tokenWrapper.withdraw(0, { from: holder }), 'TW_WITHDRAW_AMOUNT_ZERO')
-      await assertRevert(tokenWrapper.withdraw(1e30, { from: holder }), 'TW_INVALID_WITHDRAW_AMOUNT')
+      await assertRevert(tokenWrapper.withdraw(bigExp(1, 30), { from: holder }), 'TW_INVALID_WITHDRAW_AMOUNT')
     })
   })
 
@@ -156,7 +162,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     it('can not mint if transfer fails', async () => {
       // approve
-      const amount = 1e18
+      const amount = bigExp(1, 18)
       await erc20.approve(tokenWrapper.address, amount, { from: holder })
 
       // disable token and try to mint
@@ -166,7 +172,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     it('can not burn if transfer fails', async () => {
       // mint
-      const amount = 1e18
+      const amount = bigExp(1, 18)
       await erc20.approve(tokenWrapper.address, amount, { from: holder })
       await tokenWrapper.deposit(amount, { from: holder })
 

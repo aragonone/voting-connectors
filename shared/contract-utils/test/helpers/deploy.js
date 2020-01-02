@@ -12,8 +12,8 @@ module.exports = (artifacts) => {
     const regFact = await EVMScriptRegistryFactory.new()
     const daoFact = await DAOFactory.new(kernelBase.address, aclBase.address, regFact.address)
     const r = await daoFact.newDAO(owner)
-    const dao = Kernel.at(getEventArgument(r, 'DeployDAO', 'dao'))
-    const acl = ACL.at(await dao.acl())
+    const dao = await Kernel.at(getEventArgument(r, 'DeployDAO', 'dao'))
+    const acl = await ACL.at(await dao.acl())
 
     await acl.createPermission(owner, dao.address, await dao.APP_MANAGER_ROLE(), owner, { from: owner })
 
