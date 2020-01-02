@@ -1,11 +1,14 @@
 const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 const { getNewProxyAddress } = require('@aragon/test-helpers/events')
+const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
+const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
 
 const { deployDao } = require('./helpers/deploy.js')(artifacts)
 
 const ERC20 = artifacts.require('ERC20Sample')
 const ERC20Disablable = artifacts.require('ERC20Disablable')
 const TokenWrapper = artifacts.require('TokenWrapper')
+const ExecutionTarget = artifacts.require('ExecutionTarget')
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -23,6 +26,12 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     const installReceipt = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
     tokenWrapper = TokenWrapper.at(getNewProxyAddress(installReceipt))
+  })
+
+  describe('Wrong initialization', () => {
+    it('fails initializing if token is not contract', async () => {
+      await assertRevert(tokenWrapper.initialize(someone, wrappedName, wrappedSymbol), 'TW_TOKEN_NOT_CONTRACT')
+    })
   })
 
   describe('Wrapping a proper token', () => {
@@ -43,15 +52,42 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
       assert.isTrue(await tokenWrapper.isForwarder())
     })
 
+    it('fails to forward if balance is zero', async () => {
+      const executionTarget = await ExecutionTarget.new()
+
+      const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+      const script = encodeCallScript([action])
+
+      await assertRevert(tokenWrapper.forward(script, { from: holder }), 'TW_CAN_NOT_FORWARD')
+    })
+
+    it('allows to forward', async () => {
+      const executionTarget = await ExecutionTarget.new()
+
+      const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+      const script = encodeCallScript([action])
+
+      const amount = 1
+      await erc20.approve(tokenWrapper.address, amount, { from: holder })
+      await tokenWrapper.deposit(amount, { from: holder })
+
+      await tokenWrapper.forward(script, { from: holder })
+      assert.equal((await executionTarget.counter()).toString(), 1, 'should have received execution call')
+    })
+
     it('has an erc20 token', async () => {
       assert.equal(await tokenWrapper.depositedToken(), erc20.address)
     })
 
     it('can mint tokens', async () => {
       const amount = 2e18
+      const initialBlockNumber = new web3.BigNumber(await getBlockNumber())
+
       await erc20.approve(tokenWrapper.address, amount, { from: holder })
       await tokenWrapper.deposit(amount, { from: holder })
 
+      assert.equal((await tokenWrapper.balanceOfAt(holder, initialBlockNumber)).toString(), 0, 'Holder balance doesn\'t match')
+      assert.equal((await tokenWrapper.totalSupplyAt(initialBlockNumber)).toString(), 0, 'Total supply doesn\'t match')
       assert.equal((await tokenWrapper.balanceOf(holder)).toString(), amount, 'Holder balance doesn\'t match')
       assert.equal((await tokenWrapper.totalSupply()).toString(), amount, 'Total supply doesn\'t match')
       assert.isTrue(await tokenWrapper.canForward(holder, '0x'))
