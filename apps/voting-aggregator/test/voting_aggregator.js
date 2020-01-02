@@ -134,6 +134,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
         await assertRevert(votingAggregator.changeSourceWeight(sourceId.add(new web3.BigNumber(1)), weight, { from: root }), ERROR_NO_POWER_SOURCE)
       })
 
+      it('fails to change power source weight if weight is zero', async () => {
+        await assertRevert(votingAggregator.changeSourceWeight(sourceId, 0, { from: root }), ERROR_ZERO_WEIGHT)
+      })
+
       it('fails to change power source weight if weight is the same', async () => {
         await assertRevert(votingAggregator.changeSourceWeight(sourceId, weight, { from: root }), ERROR_SAME_WEIGHT)
       })
