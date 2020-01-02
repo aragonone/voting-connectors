@@ -9,9 +9,12 @@ const VotingAggregator = artifacts.require('VotingAggregator')
 const Token = artifacts.require('TokenMock')
 const Staking = artifacts.require('StakingMock')
 
+const MAX_SOURCES = 20
+
 const ERROR_ALREADY_INITIALIZED = 'INIT_ALREADY_INITIALIZED'
 const ERROR_AUTH_FAILED = 'APP_AUTH_FAILED'
 const ERROR_NO_POWER_SOURCE = 'VA_NO_POWER_SOURCE'
+const ERROR_TOO_MANY_POWER_SOURCES = 'VA_TOO_MANY_POWER_SOURCES'
 const ERROR_POWER_SOURCE_NOT_CONTRACT = 'VA_POWER_SOURCE_NOT_CONTRACT'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
 const ERROR_SAME_WEIGHT = 'VA_SAME_WEIGHT'
@@ -113,6 +116,25 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
         assert.equal(powerSource[1], type, 'source type mismatch')
         assert.equal(powerSource[2].toString(), weight, 'weight mismatch')
         assert.equal(powerSource[3].toString(), 1, 'history length mismatch')
+      })
+
+      it('fails to add if too many power sources', async () => {
+        // Add maximum number of sources to voting aggregator
+        const tokens = []
+        for (let ii = 0; ii < MAX_SOURCES; ++ii) {
+          tokens[ii] = await Token.new()
+        }
+        for (const token of tokens) {
+          await votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, 1, { from: root })
+        }
+        assert.equal(tokens.length, MAX_SOURCES, 'added number of tokens should match max sources')
+
+        // Adding one more should fail
+        const oneTooMany = await Token.new()
+        await assertRevert(
+          votingAggregator.addPowerSource(oneTooMany.address, ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_TOO_MANY_POWER_SOURCES
+        )
       })
     })
 
