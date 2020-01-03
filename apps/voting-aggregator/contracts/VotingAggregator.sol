@@ -43,7 +43,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
     string private constant ERROR_POWER_SOURCE_TYPE_INVALID = "VA_POWER_SOURCE_TYPE_INVALID";
-    string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
+    string private constant ERROR_POWER_SOURCE_INVALID = "VA_POWER_SOURCE_INVALID";
     string private constant ERROR_POWER_SOURCE_ALREADY_ADDED = "VA_POWER_SOURCE_ALREADY_ADDED";
     string private constant ERROR_TOO_MANY_POWER_SOURCES = "VA_TOO_MANY_POWER_SOURCES";
     string private constant ERROR_ZERO_WEIGHT = "VA_ZERO_WEIGHT";
@@ -116,7 +116,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
             ERROR_POWER_SOURCE_TYPE_INVALID
         );
         require(_weight > 0, ERROR_ZERO_WEIGHT);
-        require(isContract(_sourceAddr), ERROR_POWER_SOURCE_NOT_CONTRACT);
+        require(_sanityCheckSource(_sourceAddr, _sourceType), ERROR_POWER_SOURCE_INVALID);
 
         // Ensure internal consistency
         require(!_powerSourceExists(_sourceAddr), ERROR_POWER_SOURCE_ALREADY_ADDED);
@@ -347,5 +347,27 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         }
 
         revert(ERROR_INVALID_CALL_OR_SELECTOR);
+    }
+
+    // Private functions
+    function _sanityCheckSource(address _sourceAddr, PowerSourceType _sourceType) private view returns (bool) {
+        if (!isContract(_sourceAddr)) {
+            return false;
+        }
+
+        // Sanity check that the source and its declared type work for at least the current block
+        bytes memory balanceOfCalldata = abi.encodePacked(
+            _selectorFor(CallType.BalanceOfAt, _sourceType),
+            abi.encode(this, getBlockNumber())
+        );
+        (bool balanceOfSuccess,) = _sourceAddr.staticInvoke(balanceOfCalldata);
+
+        bytes memory totalSupplyCalldata = abi.encodePacked(
+            _selectorFor(CallType.TotalSupplyAt, _sourceType),
+            abi.encode(getBlockNumber())
+        );
+        (bool totalSupplySuccess,) = _sourceAddr.staticInvoke(totalSupplyCalldata);
+
+        return balanceOfSuccess && totalSupplySuccess;
     }
 }

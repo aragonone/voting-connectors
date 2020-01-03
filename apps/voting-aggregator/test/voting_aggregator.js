@@ -6,6 +6,8 @@ const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
 const { deployDao } = require('./helpers/deploy.js')(artifacts)
 
 const VotingAggregator = artifacts.require('VotingAggregator')
+
+const ERC20ViewRevertMock = artifacts.require('ERC20ViewRevertMock')
 const Token = artifacts.require('TokenMock')
 const Staking = artifacts.require('StakingMock')
 
@@ -15,9 +17,9 @@ const ERROR_ALREADY_INITIALIZED = 'INIT_ALREADY_INITIALIZED'
 const ERROR_AUTH_FAILED = 'APP_AUTH_FAILED'
 const ERROR_NO_POWER_SOURCE = 'VA_NO_POWER_SOURCE'
 const ERROR_POWER_SOURCE_TYPE_INVALID = 'VA_POWER_SOURCE_TYPE_INVALID'
+const ERROR_POWER_SOURCE_INVALID = 'VA_POWER_SOURCE_INVALID'
 const ERROR_POWER_SOURCE_ALREADY_ADDED = 'VA_POWER_SOURCE_ALREADY_ADDED'
 const ERROR_TOO_MANY_POWER_SOURCES = 'VA_TOO_MANY_POWER_SOURCES'
-const ERROR_POWER_SOURCE_NOT_CONTRACT = 'VA_POWER_SOURCE_NOT_CONTRACT'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
 const ERROR_SAME_WEIGHT = 'VA_SAME_WEIGHT'
 const ERROR_CAN_NOT_FORWARD = 'VA_CAN_NOT_FORWARD'
@@ -92,14 +94,6 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
     })
 
     describe('Add power source', () => {
-      it('fails to add power source if it is not contract', async () => {
-        const weight = 1
-        await assertRevert(
-          votingAggregator.addPowerSource(eoa, PowerSourceType.ERC20WithCheckpointing, weight, { from: root }),
-          ERROR_POWER_SOURCE_NOT_CONTRACT
-        )
-      })
-
       it('fails to add power source if type is invalid', async () => {
         const weight = 1
         await assertRevert(
@@ -113,6 +107,41 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         await assertRevert(
           votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, weight, { from: root }),
           ERROR_ZERO_WEIGHT
+        )
+      })
+
+      it('fails to add power source if it is not contract', async () => {
+        const weight = 1
+        await assertRevert(
+          votingAggregator.addPowerSource(eoa, PowerSourceType.ERC20WithCheckpointing, weight, { from: root }),
+          ERROR_POWER_SOURCE_INVALID
+        )
+      })
+
+      it('fails to add power source if the wrong type is given', async () => {
+        const staking = await Staking.new()
+
+        await assertRevert(
+          votingAggregator.addPowerSource(token.address, PowerSourceType.ERC900, 1, { from: root }),
+          ERROR_POWER_SOURCE_INVALID
+        )
+        await assertRevert(
+          votingAggregator.addPowerSource(staking.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_POWER_SOURCE_INVALID
+        )
+      })
+
+      it('fails to add power source if broken', async () => {
+        const brokenBalanceToken = await ERC20ViewRevertMock.new(true, false)
+        const brokenSupplyToken = await ERC20ViewRevertMock.new(false, true)
+
+        await assertRevert(
+          votingAggregator.addPowerSource(brokenBalanceToken.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_POWER_SOURCE_INVALID
+        )
+        await assertRevert(
+          votingAggregator.addPowerSource(brokenSupplyToken.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_POWER_SOURCE_INVALID
         )
       })
 
