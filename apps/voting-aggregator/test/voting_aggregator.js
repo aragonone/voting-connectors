@@ -168,8 +168,8 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
         const powerSource = await votingAggregator.getPowerSourceDetails(token.address)
         assert.equal(powerSource[0], type, 'source type mismatch')
-        assert.equal(powerSource[1].toString(), weight, 'weight mismatch')
-        assert.equal(powerSource[2].toString(), 1, 'history length mismatch')
+        assert.isTrue(powerSource[1], 'source enabled mismatch')
+        assert.equal(powerSource[2].toString(), weight, 'weight mismatch')
       })
 
       it('fails to add power source if it has already been added', async () => {
@@ -230,8 +230,13 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('changes power source weight', async () => {
-        const receipt = await votingAggregator.changeSourceWeight(sourceAddr, weight + 1, { from: root })
+        const newWeight = weight + 1
+
+        const receipt = await votingAggregator.changeSourceWeight(sourceAddr, newWeight, { from: root })
         assertAmountOfEvents(receipt, 'ChangePowerSourceWeight')
+
+        const powerSource = await votingAggregator.getPowerSourceDetails(sourceAddr)
+        assert.equal(powerSource[2].toString(), newWeight, 'weight should have changed')
       })
     })
 
@@ -259,6 +264,9 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       it('disables power source', async () => {
         const receipt = await votingAggregator.disableSource(sourceAddr, { from: root })
         assertAmountOfEvents(receipt, 'DisablePowerSource')
+
+        const powerSource = await votingAggregator.getPowerSourceDetails(sourceAddr)
+        assert.isFalse(powerSource[1], 'source should be disabled')
       })
     })
 
@@ -288,6 +296,9 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       it('enables power source', async () => {
         const receipt = await votingAggregator.enableSource(sourceAddr, { from: root })
         assertAmountOfEvents(receipt, 'EnablePowerSource')
+
+        const powerSource = await votingAggregator.getPowerSourceDetails(sourceAddr)
+        assert.isTrue(powerSource[1], 'source should be enabled')
       })
     })
 

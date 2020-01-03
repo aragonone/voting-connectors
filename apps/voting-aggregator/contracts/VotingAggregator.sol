@@ -10,7 +10,8 @@ import "@aragon/os/contracts/common/IsContract.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
-import "@aragonone/voting-connectors-contract-utils/contracts/ActivePeriod.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/Checkpointing.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/CheckpointingHelpers.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/StaticInvoke.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
@@ -25,7 +26,8 @@ import "./interfaces/IERC900History.sol";
 contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
     using StaticInvoke for address;
-    using ActivePeriod for ActivePeriod.History;
+    using Checkpointing for Checkpointing.History;
+    using CheckpointingHelpers for uint256;
 
     /* Hardcoded constants to save gas
     bytes32 public constant ADD_POWER_SOURCE_ROLE = keccak256("ADD_POWER_SOURCE_ROLE");
@@ -40,6 +42,8 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     // Note the primary protection this provides is to ensure that one cannot continue adding
     // sources to break gas limits even with all sources disabled.
     uint256 internal constant MAX_SOURCES = 20;
+    uint192 internal constant SOURCE_ENABLED_VALUE = 1;
+    uint192 internal constant SOURCE_DISABLED_VALUE = 0;
 
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
     string private constant ERROR_POWER_SOURCE_TYPE_INVALID = "VA_POWER_SOURCE_TYPE_INVALID";
@@ -48,6 +52,8 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     string private constant ERROR_TOO_MANY_POWER_SOURCES = "VA_TOO_MANY_POWER_SOURCES";
     string private constant ERROR_ZERO_WEIGHT = "VA_ZERO_WEIGHT";
     string private constant ERROR_SAME_WEIGHT = "VA_SAME_WEIGHT";
+    string private constant ERROR_SOURCE_NOT_ENABLED = "VA_SOURCE_NOT_ENABLED";
+    string private constant ERROR_SOURCE_NOT_DISABLED = "VA_SOURCE_NOT_DISABLED";
     string private constant ERROR_CAN_NOT_FORWARD = "VA_CAN_NOT_FORWARD";
     string private constant ERROR_SOURCE_CALL_FAILED = "VA_SOURCE_CALL_FAILED";
     string private constant ERROR_INVALID_CALL_OR_SELECTOR = "VA_INVALID_CALL_OR_SELECTOR";
@@ -65,8 +71,8 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
     struct PowerSource {
         PowerSourceType sourceType;
-        uint256 weight;
-        ActivePeriod.History activationHistory;
+        Checkpointing.History enabledHistory;
+        Checkpointing.History weightHistory;
     }
 
     string public name;
@@ -127,10 +133,10 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
         PowerSource storage source = powerSourceDetails[_sourceAddr];
         source.sourceType = _sourceType;
-        source.weight = _weight;
 
-        // Start activation history with [current block, max block)
-        source.activationHistory.startNextPeriodFrom(getBlockNumber());
+        // Start enabled and weight history
+        source.enabledHistory.addCheckpoint(getBlockNumber64(), SOURCE_ENABLED_VALUE);
+        source.weightHistory.addCheckpoint(getBlockNumber64(), _weight.toUint192Value());
 
         emit AddPowerSource(_sourceAddr, _sourceType, _weight);
     }
@@ -142,12 +148,16 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
      */
     function changeSourceWeight(address _sourceAddr, uint256 _weight)
         external
-        authP(MANAGE_WEIGHTS_ROLE, arr(_weight, powerSourceDetails[_sourceAddr].weight))
+        authP(MANAGE_WEIGHTS_ROLE, arr(_weight, powerSourceDetails[_sourceAddr].weightHistory.latestValue()))
         sourceExists(_sourceAddr)
     {
         require(_weight > 0, ERROR_ZERO_WEIGHT);
-        require(powerSourceDetails[_sourceAddr].weight != _weight, ERROR_SAME_WEIGHT);
-        powerSourceDetails[_sourceAddr].weight = _weight;
+
+        Checkpointing.History storage weightHistory = powerSourceDetails[_sourceAddr].weightHistory;
+        require(weightHistory.latestValue() != _weight, ERROR_SAME_WEIGHT);
+
+        weightHistory.addCheckpoint(getBlockNumber64(), _weight.toUint192Value());
+
         emit ChangePowerSourceWeight(_sourceAddr, _weight);
     }
 
@@ -160,13 +170,13 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         authP(MANAGE_POWER_SOURCE_ROLE, arr(uint256(0)))
         sourceExists(_sourceAddr)
     {
-        PowerSource storage source = powerSourceDetails[_sourceAddr];
+        Checkpointing.History storage enabledHistory = powerSourceDetails[_sourceAddr].enabledHistory;
+        require(
+            enabledHistory.latestValue() == uint256(SOURCE_ENABLED_VALUE),
+            ERROR_SOURCE_NOT_ENABLED
+        );
 
-        // Disable after this block
-        // This makes sure any queries to this aggregator this block are still consistent until the
-        // end of the block
-        // Ignore SafeMath here; we will have bigger issues if this overflows
-        source.activationHistory.stopCurrentPeriodAt(getBlockNumber() + 1);
+        enabledHistory.addCheckpoint(getBlockNumber64(), SOURCE_DISABLED_VALUE);
 
         emit DisablePowerSource(_sourceAddr);
     }
@@ -180,10 +190,13 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         sourceExists(_sourceAddr)
         authP(MANAGE_POWER_SOURCE_ROLE, arr(uint256(1)))
     {
-        PowerSource storage source = powerSourceDetails[_sourceAddr];
+        Checkpointing.History storage enabledHistory = powerSourceDetails[_sourceAddr].enabledHistory;
+        require(
+            enabledHistory.latestValue() == uint256(SOURCE_DISABLED_VALUE),
+            ERROR_SOURCE_NOT_DISABLED
+        );
 
-        // Add new activation period with [current block, max block)
-        source.activationHistory.startNextPeriodFrom(getBlockNumber());
+        enabledHistory.addCheckpoint(getBlockNumber64(), SOURCE_ENABLED_VALUE);
 
         emit EnablePowerSource(_sourceAddr);
     }
@@ -251,8 +264,8 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
      * @dev Return information about a power source
      * @param _sourceAddr Power source's address
      * @return Power source type
+     * @return Whether power source is enabled
      * @return Power source weight
-     * @return Number of activation history points
      */
     function getPowerSourceDetails(address _sourceAddr)
         public
@@ -260,37 +273,15 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         sourceExists(_sourceAddr)
         returns (
             PowerSourceType sourceType,
-            uint256 weight,
-            uint256 historyLength
+            bool enabled,
+            uint256 weight
         )
     {
         PowerSource storage source = powerSourceDetails[_sourceAddr];
 
         sourceType = source.sourceType;
-        weight = source.weight;
-        historyLength = source.activationHistory.history.length;
-    }
-
-    /**
-     * @dev Return information about a power source's activation history
-     * @param _sourceAddr Power source's address
-     * @param _periodIndex Index of activation history
-     * @return Start block of activation period
-     * @return End block of activation period
-     */
-    function getPowerSourceActivationPeriod(address _sourceAddr, uint256 _periodIndex)
-        public
-        view
-        sourceExists(_sourceAddr)
-        returns (
-            uint128 enabledFromBlock,
-            uint128 disabledOnBlock
-        )
-    {
-        ActivePeriod.Period storage period = powerSourceDetails[_sourceAddr].activationHistory.getPeriod(_periodIndex);
-
-        enabledFromBlock = period.enabledFromTime;
-        disabledOnBlock = period.disabledOnTime;
+        enabled = source.enabledHistory.latestValue() == uint256(SOURCE_ENABLED_VALUE);
+        weight = source.weightHistory.latestValue();
     }
 
     /**
@@ -304,18 +295,20 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     // Internal fns
 
     function _aggregateAt(uint256 _blockNumber, CallType _callType, bytes memory _paramdata) internal view returns (uint256) {
-        uint256 aggregate = 0;
+        uint64 _blockNumberUint64 = _blockNumber.toUint64Time();
 
+        uint256 aggregate = 0;
         for (uint256 i = 0; i < powerSources.length; i++) {
             address sourceAddr = powerSources[i];
             PowerSource storage source = powerSourceDetails[sourceAddr];
 
-            if (source.activationHistory.isEnabledAt(_blockNumber)) {
+            if (source.enabledHistory.getValueAt(_blockNumberUint64) == uint256(SOURCE_ENABLED_VALUE)) {
                 bytes memory invokeData = abi.encodePacked(_selectorFor(_callType, source.sourceType), _paramdata);
                 (bool success, uint256 value) = sourceAddr.staticInvoke(invokeData);
                 require(success, ERROR_SOURCE_CALL_FAILED);
 
-                aggregate = aggregate.add(source.weight.mul(value));
+                uint256 weight = source.weightHistory.getValueAt(_blockNumberUint64);
+                aggregate = aggregate.add(weight.mul(value));
             }
         }
 
