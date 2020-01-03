@@ -61,26 +61,24 @@ contract('Checkpointing', () => {
     checkpointing = await CheckpointingWrapper.new()
   })
 
-  context('checkpointing supports:', () => {
+  describe('checkpointing supports:', () => {
     tests.forEach(({ description, values, expects, size }) => {
       it(description, async () => {
-
         assert.equal(await checkpointing.lastUpdated(), 0, 'last updated should be 0')
 
         // add values sequentially
         await values.reduce(
-          (prev, { v, t }) => prev.then(() => checkpointing.addCheckpoint(t, v))
-          , Promise.resolve())
+          (prev, { v, t }) => prev.then(() => checkpointing.addCheckpoint(t, v)),
+          Promise.resolve()
+        )
 
         await expects.reduce(
           async (prev, { t, v }) =>
-            prev.then(
-              async () => new Promise(async (resolve, reject) => {
-                assert.equal((await checkpointing.getValueAt(t)).toString(), v, 'expected value should match checkpoint')
-                resolve()
-              })
-            )
-          , Promise.resolve())
+            prev.then(async () => {
+              assert.equal((await checkpointing.getValueAt(t)).toString(), v, 'expected value should match checkpoint')
+            }),
+          Promise.resolve()
+        )
 
         assert.equal(await checkpointing.getHistorySize(), size, 'size should match')
         assert.equal(await checkpointing.lastUpdated(), values.slice(-1)[0].t, 'last updated should be correct')
@@ -88,7 +86,7 @@ contract('Checkpointing', () => {
     })
   })
 
-  it('fails if inserting past value', async () => {
+  it('fails if inserting value at past time', async () => {
     const time = 5
     const value = 2
 

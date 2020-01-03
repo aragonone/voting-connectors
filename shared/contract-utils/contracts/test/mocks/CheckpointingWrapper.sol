@@ -24,7 +24,7 @@ contract CheckpointingWrapper {
         return history.latestValue();
     }
 
-    function getHistorySize() public view returns (uint256) {
+    function getHistorySize() external view returns (uint256) {
         return history.history.length;
     }
 }
