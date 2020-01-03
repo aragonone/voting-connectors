@@ -139,6 +139,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         authP(MANAGE_WEIGHTS_ROLE, arr(_weight, powerSources[_sourceId].weight))
         sourceExists(_sourceId)
     {
+        require(_weight > 0, ERROR_ZERO_WEIGHT);
         require(powerSources[_sourceId].weight != _weight, ERROR_SAME_WEIGHT);
         powerSources[_sourceId].weight = _weight;
         emit ChangePowerSourceWeight(_sourceId, _weight);
