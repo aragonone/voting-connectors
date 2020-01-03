@@ -166,7 +166,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         const receipt = await votingAggregator.addPowerSource(token.address, type, weight, { from: root })
         assertAmountOfEvents(receipt, 'AddPowerSource')
         assert.equal(
-          (numPowerSourcesAtStart.add(new web3.BigNumber(1))).toString(),
+          (numPowerSourcesAtStart.add(bn(1))).toString(),
           (await votingAggregator.getPowerSourcesLength()).toString(),
           'power sources length not incremented'
         )
@@ -389,7 +389,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         })
 
         beforeEach('add balances', async () => {
-          blockNumber = new web3.BigNumber(await getBlockNumber())
+          blockNumber = bn(await getBlockNumber())
 
           await addBalances(blockNumber)
         })

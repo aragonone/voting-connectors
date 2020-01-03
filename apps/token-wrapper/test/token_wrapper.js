@@ -3,7 +3,6 @@ const { BN } = require('web3-utils')
 const { assertRevert } = require('@aragonone/voting-connectors-contract-utils/test/helpers/assertThrow')
 const { getNewProxyAddress } = require('@aragon/test-helpers/events')
 const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
-const { getNewProxyAddress } = require('@aragon/test-helpers/events')
 const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
 
 const { deployDao } = require('@aragonone/voting-connectors-contract-utils/test/helpers/deploy.js')(artifacts)
@@ -84,8 +83,8 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     context('account has no deposited tokens', () => {
       it('can mint tokens', async () => {
-        const amount = 2e18
-        const initialBlockNumber = new web3.BigNumber(await getBlockNumber())
+        const amount = bigExp(2, 18)
+        const initialBlockNumber = bn(await getBlockNumber())
 
         await erc20.approve(tokenWrapper.address, amount, { from: holder })
         await tokenWrapper.deposit(amount, { from: holder })
@@ -101,15 +100,15 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
       it('fails to forward if wrapped balance is zero', async () => {
         const executionTarget = await ExecutionTarget.new()
 
-      const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
-      const script = encodeCallScript([action])
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
+        const script = encodeCallScript([action])
 
         await assertRevert(tokenWrapper.forward(script, { from: holder }), 'TW_CAN_NOT_FORWARD')
       })
     })
 
     context('account has deposited tokens', () => {
-      const wrappedAmount = 2e18
+      const wrappedAmount = bigExp(2, 18)
 
       beforeEach('deposit tokens', async () => {
         await erc20.approve(tokenWrapper.address, wrappedAmount, { from: holder })
@@ -121,7 +120,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
         const previousSupply = await tokenWrapper.totalSupply()
 
         // Withdraw
-        const unwrappedAmount = new web3.BigNumber(1e18)
+        const unwrappedAmount = bigExp(1, 18)
         await tokenWrapper.withdraw(unwrappedAmount, { from: holder })
 
         assert.equal((await tokenWrapper.balanceOf(holder)).toString(), previousBalance.sub(unwrappedAmount), "Holder balance doesn't match")
@@ -133,7 +132,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
       it('allows to forward', async () => {
         const executionTarget = await ExecutionTarget.new()
 
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
         const script = encodeCallScript([action])
 
         await tokenWrapper.forward(script, { from: holder })
@@ -143,7 +142,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     it('can not mint invalid amounts', async () => {
       await assertRevert(tokenWrapper.deposit(0, { from: holder }), 'TW_DEPOSIT_AMOUNT_ZERO')
-      await assertRevert(tokenWrapper.deposit(1e30, { from: holder }), 'TW_TOKEN_TRANSFER_FROM_FAILED')
+      await assertRevert(tokenWrapper.deposit(bigExp(1, 30), { from: holder }), 'TW_TOKEN_TRANSFER_FROM_FAILED')
     })
 
     it('can not burn invalid amounts', async () => {
