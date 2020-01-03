@@ -14,6 +14,8 @@ const MAX_SOURCES = 20
 const ERROR_ALREADY_INITIALIZED = 'INIT_ALREADY_INITIALIZED'
 const ERROR_AUTH_FAILED = 'APP_AUTH_FAILED'
 const ERROR_NO_POWER_SOURCE = 'VA_NO_POWER_SOURCE'
+const ERROR_POWER_SOURCE_TYPE_INVALID = 'VA_POWER_SOURCE_TYPE_INVALID'
+const ERROR_POWER_SOURCE_ALREADY_ADDED = 'VA_POWER_SOURCE_ALREADY_ADDED'
 const ERROR_TOO_MANY_POWER_SOURCES = 'VA_TOO_MANY_POWER_SOURCES'
 const ERROR_POWER_SOURCE_NOT_CONTRACT = 'VA_POWER_SOURCE_NOT_CONTRACT'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
@@ -22,9 +24,12 @@ const ERROR_CAN_NOT_FORWARD = 'VA_CAN_NOT_FORWARD'
 const ERROR_SOURCE_CALL_FAILED = 'VA_SOURCE_CALL_FAILED'
 const ERROR_INVALID_CALL_OR_SELECTOR = 'VA_INVALID_CALL_OR_SELECTOR'
 
-contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
-  const ERC20WithCheckpointing = 0
-  const ERC900 = 1
+contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone]) => {
+  const PowerSourceType = {
+    Invalid: 0,
+    ERC20WithCheckpointing: 1,
+    ERC900: 2,
+  }
 
   let dao, acl
   let votingAggregatorBase, votingAggregator
@@ -89,35 +94,61 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
     describe('Add power source', () => {
       it('fails to add power source if it is not contract', async () => {
         const weight = 1
-        await assertRevert(votingAggregator.addPowerSource(eoa, ERC20WithCheckpointing, weight, { from: root }), ERROR_POWER_SOURCE_NOT_CONTRACT)
+        await assertRevert(
+          votingAggregator.addPowerSource(eoa, PowerSourceType.ERC20WithCheckpointing, weight, { from: root }),
+          ERROR_POWER_SOURCE_NOT_CONTRACT
+        )
+      })
+
+      it('fails to add power source if type is invalid', async () => {
+        const weight = 1
+        await assertRevert(
+          votingAggregator.addPowerSource(token.address, PowerSourceType.Invalid, weight, { from: root }),
+          ERROR_POWER_SOURCE_TYPE_INVALID
+        )
       })
 
       it('fails to add power source if weight is zero', async () => {
         const weight = 0
-        await assertRevert(votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, weight, { from: root }), ERROR_ZERO_WEIGHT)
+        await assertRevert(
+          votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, weight, { from: root }),
+          ERROR_ZERO_WEIGHT
+        )
       })
 
       it('fails to add power source if does not have permission', async () => {
         const weight = 1
-        await assertRevert(votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, weight, { from: unprivileged }), ERROR_AUTH_FAILED)
+        await assertRevert(
+          votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, weight, { from: unprivileged }),
+          ERROR_AUTH_FAILED
+        )
       })
 
       it('adds power source', async () => {
         const weight = 1
-        const type = ERC20WithCheckpointing
-        const powerSourcesLength = await votingAggregator.powerSourcesLength()
+        const type = PowerSourceType.ERC20WithCheckpointing
+        const numPowerSourcesAtStart = await votingAggregator.getPowerSourcesLength()
+
         const receipt = await votingAggregator.addPowerSource(token.address, type, weight, { from: root })
         assertAmountOfEvents(receipt, 'AddPowerSource')
         assert.equal(
-          (powerSourcesLength.add(new web3.BigNumber(1))).toString(),
-          (await votingAggregator.powerSourcesLength()).toString(),
+          (numPowerSourcesAtStart.add(new web3.BigNumber(1))).toString(),
+          (await votingAggregator.getPowerSourcesLength()).toString(),
           'power sources length not incremented'
         )
-        const powerSource = await votingAggregator.getPowerSource(powerSourcesLength)
-        assert.equal(powerSource[0], token.address, 'source address mismatch')
-        assert.equal(powerSource[1], type, 'source type mismatch')
-        assert.equal(powerSource[2].toString(), weight, 'weight mismatch')
-        assert.equal(powerSource[3].toString(), 1, 'history length mismatch')
+
+        const powerSource = await votingAggregator.getPowerSourceDetails(token.address)
+        assert.equal(powerSource[0], type, 'source type mismatch')
+        assert.equal(powerSource[1].toString(), weight, 'weight mismatch')
+        assert.equal(powerSource[2].toString(), 1, 'history length mismatch')
+      })
+
+      it('fails to add power source if it has already been added', async () => {
+        await votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root })
+        await assertRevert(
+          votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_POWER_SOURCE_ALREADY_ADDED
+        )
       })
 
       it('fails to add if too many power sources', async () => {
@@ -127,14 +158,14 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
           tokens[ii] = await Token.new()
         }
         for (const token of tokens) {
-          await votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, 1, { from: root })
+          await votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root })
         }
         assert.equal(tokens.length, MAX_SOURCES, 'added number of tokens should match max sources')
 
         // Adding one more should fail
         const oneTooMany = await Token.new()
         await assertRevert(
-          votingAggregator.addPowerSource(oneTooMany.address, ERC20WithCheckpointing, 1, { from: root }),
+          votingAggregator.addPowerSource(oneTooMany.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
           ERROR_TOO_MANY_POWER_SOURCES
         )
       })
@@ -142,81 +173,91 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
 
     describe('Change source weight', () => {
       const weight = 1
-      let sourceId
+      let sourceAddr
+
+      before(() => {
+        sourceAddr = token.address
+      })
 
       beforeEach('add power source', async () => {
-        const type = ERC20WithCheckpointing
-        const receipt = await votingAggregator.addPowerSource(token.address, type, weight, { from: root })
-        sourceId = getEventArgument(receipt, 'AddPowerSource', 'sourceId')
+        const type = PowerSourceType.ERC20WithCheckpointing
+        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
       })
 
       it('fails to change power source weight if does not have permission', async () => {
-        await assertRevert(votingAggregator.changeSourceWeight(sourceId, weight, { from: unprivileged }), ERROR_AUTH_FAILED)
+        await assertRevert(votingAggregator.changeSourceWeight(sourceAddr, weight, { from: unprivileged }), ERROR_AUTH_FAILED)
       })
 
       it('fails to change power source weight if source does not exist', async () => {
-        await assertRevert(votingAggregator.changeSourceWeight(sourceId.add(new web3.BigNumber(1)), weight, { from: root }), ERROR_NO_POWER_SOURCE)
+        await assertRevert(votingAggregator.changeSourceWeight(someone, weight, { from: root }), ERROR_NO_POWER_SOURCE)
       })
 
       it('fails to change power source weight if weight is zero', async () => {
-        await assertRevert(votingAggregator.changeSourceWeight(sourceId, 0, { from: root }), ERROR_ZERO_WEIGHT)
+        await assertRevert(votingAggregator.changeSourceWeight(sourceAddr, 0, { from: root }), ERROR_ZERO_WEIGHT)
       })
 
       it('fails to change power source weight if weight is the same', async () => {
-        await assertRevert(votingAggregator.changeSourceWeight(sourceId, weight, { from: root }), ERROR_SAME_WEIGHT)
+        await assertRevert(votingAggregator.changeSourceWeight(sourceAddr, weight, { from: root }), ERROR_SAME_WEIGHT)
       })
 
       it('changes power source weight', async () => {
-        const receipt = await votingAggregator.changeSourceWeight(sourceId, weight + 1, { from: root })
+        const receipt = await votingAggregator.changeSourceWeight(sourceAddr, weight + 1, { from: root })
         assertAmountOfEvents(receipt, 'ChangePowerSourceWeight')
       })
     })
 
     describe('Disable source', () => {
-      let sourceId
+      let sourceAddr
+
+      before(() => {
+        sourceAddr = token.address
+      })
 
       beforeEach('add power source', async () => {
-        const type = ERC20WithCheckpointing
+        const type = PowerSourceType.ERC20WithCheckpointing
         const weight = 1
-        const receipt = await votingAggregator.addPowerSource(token.address, type, weight, { from: root })
-        sourceId = getEventArgument(receipt, 'AddPowerSource', 'sourceId')
+        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
       })
 
       it('fails to disable power source if does not have permission', async () => {
-        await assertRevert(votingAggregator.disableSource(sourceId, { from: unprivileged }), ERROR_AUTH_FAILED)
+        await assertRevert(votingAggregator.disableSource(sourceAddr, { from: unprivileged }), ERROR_AUTH_FAILED)
       })
 
       it('fails to disable power source if source does not exist', async () => {
-        await assertRevert(votingAggregator.disableSource(sourceId.add(new web3.BigNumber(1)), { from: root }), ERROR_NO_POWER_SOURCE)
+        await assertRevert(votingAggregator.disableSource(someone, { from: root }), ERROR_NO_POWER_SOURCE)
       })
 
       it('disables power source', async () => {
-        const receipt = await votingAggregator.disableSource(sourceId, { from: root })
+        const receipt = await votingAggregator.disableSource(sourceAddr, { from: root })
         assertAmountOfEvents(receipt, 'DisablePowerSource')
       })
     })
 
     describe('Enable source', () => {
-      let sourceId
+      let sourceAddr
+
+      before(() => {
+        sourceAddr = token.address
+      })
 
       beforeEach('add and disable power source', async () => {
-        const type = ERC20WithCheckpointing
+        const type = PowerSourceType.ERC20WithCheckpointing
         const weight = 1
-        const receipt = await votingAggregator.addPowerSource(token.address, type, weight, { from: root })
-        sourceId = getEventArgument(receipt, 'AddPowerSource', 'sourceId')
-        await votingAggregator.disableSource(sourceId, { from: root })
+        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+
+        await votingAggregator.disableSource(sourceAddr, { from: root })
       })
 
       it('fails to enable power source if does not have permission', async () => {
-        await assertRevert(votingAggregator.enableSource(sourceId, { from: unprivileged }), ERROR_AUTH_FAILED)
+        await assertRevert(votingAggregator.enableSource(sourceAddr, { from: unprivileged }), ERROR_AUTH_FAILED)
       })
 
       it('fails to enable power source if source does not exist', async () => {
-        await assertRevert(votingAggregator.enableSource(sourceId.add(new web3.BigNumber(1)), { from: root }), ERROR_NO_POWER_SOURCE)
+        await assertRevert(votingAggregator.enableSource(someone, { from: root }), ERROR_NO_POWER_SOURCE)
       })
 
       it('enables power source', async () => {
-        const receipt = await votingAggregator.enableSource(sourceId, { from: root })
+        const receipt = await votingAggregator.enableSource(sourceAddr, { from: root })
         assertAmountOfEvents(receipt, 'EnablePowerSource')
       })
     })
@@ -241,16 +282,21 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
         ).reduce((acc, val) => acc.concat(val), []))
       }
 
-      beforeEach('deploy stake, add sources', async () => {
+      beforeEach('deploy staking, add sources', async () => {
         // deploy staking
         staking = await Staking.new()
 
         // add sources
         const tokenWeight = 1
         const stakingWeight = 3
-        await votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, tokenWeight, { from: root })
-        await votingAggregator.addPowerSource(staking.address, ERC900, stakingWeight, { from: root })
+        await votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, tokenWeight, { from: root })
+        await votingAggregator.addPowerSource(staking.address, PowerSourceType.ERC900, stakingWeight, { from: root })
 
+        assert.equal(
+          (await votingAggregator.getPowerSourcesLength()).toString(),
+          '2',
+          'number of added power sources not correct'
+        )
       })
 
       context('When all sources are enabled', () => {
@@ -292,9 +338,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
       context('When some sources are disabled', () => {
         let blockNumber
 
-        beforeEach('add balances', async () => {
-          await votingAggregator.disableSource(1, { from: root })
+        // Make sure to disable source before adding balances for checkpointing
+        beforeEach('disable token source', async () => {
+          await votingAggregator.disableSource(staking.address, { from: root })
+        })
 
+        beforeEach('add balances', async () => {
           blockNumber = new web3.BigNumber(await getBlockNumber())
 
           await addBalances(blockNumber)
