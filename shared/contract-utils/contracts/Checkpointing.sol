@@ -14,9 +14,6 @@ pragma solidity ^0.4.24;
  *   - Staking (https://github.com/aragon/staking/blob/master/contracts/Checkpointing.sol)
  */
 library Checkpointing {
-    uint256 private constant MAX_UINT192 = uint256(uint192(-1));
-    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
-
     string private constant ERROR_PAST_CHECKPOINT = "CHECKPOINT_PAST_CHECKPOINT";
     string private constant ERROR_TIME_TOO_BIG = "CHECKPOINT_TIME_TOO_BIG";
     string private constant ERROR_VALUE_TOO_BIG = "CHECKPOINT_VALUE_TOO_BIG";

@@ -28,9 +28,9 @@ import "@aragonone/voting-connectors-contract-utils/contracts/CheckpointingHelpe
  */
 contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20ViewOnly, AragonApp {
     using SafeMath for uint256;
-    using CheckpointingHelpers for uint256;
     using SafeERC20 for ERC20;
     using Checkpointing for Checkpointing.History;
+    using CheckpointingHelpers for uint256;
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "TW_TOKEN_NOT_CONTRACT";
     string private constant ERROR_DEPOSIT_AMOUNT_ZERO = "TW_DEPOSIT_AMOUNT_ZERO";
