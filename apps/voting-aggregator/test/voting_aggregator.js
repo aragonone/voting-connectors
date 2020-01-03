@@ -9,10 +9,13 @@ const VotingAggregator = artifacts.require('VotingAggregator')
 const Token = artifacts.require('TokenMock')
 const Staking = artifacts.require('StakingMock')
 
+const MAX_SOURCES = 20
+
 const ERROR_ALREADY_INITIALIZED = 'INIT_ALREADY_INITIALIZED'
 const ERROR_AUTH_FAILED = 'APP_AUTH_FAILED'
 const ERROR_NO_POWER_SOURCE = 'VA_NO_POWER_SOURCE'
 const ERROR_POWER_SOURCE_ALREADY_ADDED = 'VA_POWER_SOURCE_ALREADY_ADDED'
+const ERROR_TOO_MANY_POWER_SOURCES = 'VA_TOO_MANY_POWER_SOURCES'
 const ERROR_POWER_SOURCE_NOT_CONTRACT = 'VA_POWER_SOURCE_NOT_CONTRACT'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
 const ERROR_SAME_WEIGHT = 'VA_SAME_WEIGHT'
@@ -24,10 +27,13 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
   const ERC20WithCheckpointing = 0
   const ERC900 = 1
 
+  let dao, acl
   let votingAggregatorBase, votingAggregator
   let ADD_POWER_SOURCE_ROLE, MANAGE_POWER_SOURCE_ROLE, MANAGE_WEIGHTS_ROLE
 
   before(async () => {
+    ({ dao, acl } = await deployDao(root))
+
     votingAggregatorBase = await VotingAggregator.new()
 
     ADD_POWER_SOURCE_ROLE = await votingAggregatorBase.ADD_POWER_SOURCE_ROLE()
@@ -36,8 +42,6 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
   })
 
   beforeEach('deploy dao with voting aggregator', async () => {
-    const { dao, acl } = await deployDao(root)
-
     const installReceipt = await dao.newAppInstance('0x1234', votingAggregatorBase.address, '0x', false, { from: root })
     votingAggregator = VotingAggregator.at(getNewProxyAddress(installReceipt))
 
@@ -52,19 +56,20 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
     assert.equal(MANAGE_WEIGHTS_ROLE, web3.sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
   })
 
-  describe('initialize', () => {
+  describe('App is not initialized yet', () => {
     const name = 'Voting Aggregator'
     const symbol = 'VA'
     const decimals = 18
 
     it('initializes app', async () => {
       await votingAggregator.initialize(name, symbol, decimals)
+      assert.isTrue(await votingAggregator.hasInitialized(), 'not initialized')
       assert.equal(await votingAggregator.name(), name, 'name mismatch')
       assert.equal(await votingAggregator.symbol(), symbol, 'symbol mismatch')
       assert.equal((await votingAggregator.decimals()).toString(), decimals, 'decimals mismatch')
     })
 
-    it('cannot init twice', async () => {
+    it('cannot be initialized twice', async () => {
       await votingAggregator.initialize(name, symbol, decimals)
       await assertRevert(votingAggregator.initialize(name, symbol, decimals), ERROR_ALREADY_INITIALIZED)
     })
@@ -123,6 +128,25 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
           ERROR_POWER_SOURCE_ALREADY_ADDED
         )
       })
+
+      it('fails to add if too many power sources', async () => {
+        // Add maximum number of sources to voting aggregator
+        const tokens = []
+        for (let ii = 0; ii < MAX_SOURCES; ++ii) {
+          tokens[ii] = await Token.new()
+        }
+        for (const token of tokens) {
+          await votingAggregator.addPowerSource(token.address, ERC20WithCheckpointing, 1, { from: root })
+        }
+        assert.equal(tokens.length, MAX_SOURCES, 'added number of tokens should match max sources')
+
+        // Adding one more should fail
+        const oneTooMany = await Token.new()
+        await assertRevert(
+          votingAggregator.addPowerSource(oneTooMany.address, ERC20WithCheckpointing, 1, { from: root }),
+          ERROR_TOO_MANY_POWER_SOURCES
+        )
+      })
     })
 
     describe('Change source weight', () => {
@@ -141,6 +165,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
 
       it('fails to change power source weight if source does not exist', async () => {
         await assertRevert(votingAggregator.changeSourceWeight(sourceId.add(new web3.BigNumber(1)), weight, { from: root }), ERROR_NO_POWER_SOURCE)
+      })
+
+      it('fails to change power source weight if weight is zero', async () => {
+        await assertRevert(votingAggregator.changeSourceWeight(sourceId, 0, { from: root }), ERROR_ZERO_WEIGHT)
       })
 
       it('fails to change power source weight if weight is the same', async () => {

@@ -7,3 +7,7 @@ Token holders of the outside token have the ability to wrap and unwrap their tok
 ## 🚨 Not yet audited, use at your own risk
 
 The `TokenWrapper` contract has not yet been professionally audited. It is relatively simple, but use with this asterisk in mind.
+
+## Caveats
+
+In efforts to save gas costs and space to introduce the checkpointing, token amounts are limited to `uint192`. This should not pose a problem for any token, but as `uint192` supports a _very_ large range of numbers, but the TokenWrapper will stop accepting deposits once if it hits `2^192 - 1`.

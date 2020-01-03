@@ -20,6 +20,7 @@ import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20W
  * @title TokenWrapper
  * @notice Wrapper around a normal ERC20 token that provides a "view-only" checkpointed ERC20
  *         implementation for use with Voting apps.
+ *         It only supports up to 2^192 - 1 tokens being deposited (not taking into account decimals).
  * @dev Inspired by:
  *   - MiniMe token
  *   - https://github.com/MyBitFoundation/MyBit-DAO.tech/blob/master/apps/MyTokens/contracts/MyTokens.sol
@@ -68,6 +69,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
 
     /**
      * @notice Wrap `@tokenAmount(self.depositedToken(): address, _amount)`
+     * @dev Only up to 2^192 - 1 tokens are ever allowed to be deposited, due to the underlying
+     *      storage format.
      * @param _amount Amount to wrap
      */
     function deposit(uint256 _amount) external isInitialized {
