@@ -89,8 +89,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
         uint64 currentBlock = getBlockNumber64();
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192());
-        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192());
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192Value());
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192Value());
 
         emit Deposit(msg.sender, _amount);
     }
@@ -112,8 +112,8 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
         uint64 currentBlock = getBlockNumber64();
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192());
-        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192());
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192Value());
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192Value());
 
         // Then return ERC20 tokens
         require(depositedToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
@@ -190,10 +190,10 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     // Internal fns
 
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
-        return balancesHistory[_owner].getValueAt(_blockNumber.toUint64());
+        return balancesHistory[_owner].getValueAt(_blockNumber.toUint64Time());
     }
 
     function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
-        return totalSupplyHistory.getValueAt(_blockNumber.toUint64());
+        return totalSupplyHistory.getValueAt(_blockNumber.toUint64Time());
     }
 }
