@@ -275,7 +275,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
      * @return Start block of activation period
      * @return End block of activation period
      */
-    function getPowerSourceActivatationPeriod(uint256 _sourceId, uint256 _periodIndex)
+    function getPowerSourceActivationPeriod(uint256 _sourceId, uint256 _periodIndex)
         public
         view
         sourceExists(_sourceId)

@@ -1,11 +1,26 @@
 # Voting Connectors <img align="right" src="https://raw.githubusercontent.com/aragon/design/master/readme-logo.png" height="80px" />
 
+This repository contains apps that serve as bridges to Aragon Voting apps requiring checkpointed balances (or any other app that requires checkpointed balances).
+
+An Aragon Voting app requiring checkpointed balances expects the following interface to be implemented in its attached power source (usually a token or a contract that looks like one):
+
+```solidity
+// See shared/contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol
+contract IERC20WithCheckpointing {
+    function balanceOf(address _owner) public view returns (uint256);
+    function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256);
+
+    function totalSupply() public view returns (uint256);
+    function totalSupplyAt(uint256 _blockNumber) public view returns (uint256);
+}
+```
+
+An example of such a Voting app is [aragon-apps/voting](https://github.com/aragon/aragon-apps/tree/master/apps/voting).
+
 ## Apps
 
-This repository contains the following apps that serve as bridges to Aragon Voting apps (or any
-other app that requires checkpointed balances):
-
 - **[Token Wrapper](apps/token-wrapper)**: Wrap external tokens to a checkpointed token.
+- **[Voting Aggregator](apps/voting-aggregator)**: Aggregate voting power over multiple sources.
 
 Each of the individual apps come with a frontend that is intended to be installed and used through the [Aragon client](http://github.com/aragon/aragon).
 
