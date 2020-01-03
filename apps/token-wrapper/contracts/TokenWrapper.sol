@@ -11,6 +11,7 @@ import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 import "@aragonone/voting-connectors-contract-utils/contracts/Checkpointing.sol";
+import "@aragonone/voting-connectors-contract-utils/contracts/CheckpointingHelpers.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/ERC20ViewOnly.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithCheckpointing.sol";
 import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20WithDecimals.sol";
@@ -29,6 +30,7 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
     using Checkpointing for Checkpointing.History;
+    using CheckpointingHelpers for uint256;
 
     string private constant ERROR_TOKEN_NOT_CONTRACT = "TW_TOKEN_NOT_CONTRACT";
     string private constant ERROR_DEPOSIT_AMOUNT_ZERO = "TW_DEPOSIT_AMOUNT_ZERO";
@@ -86,9 +88,9 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 currentTotalSupply = totalSupply();
         uint256 newTotalSupply = currentTotalSupply.add(_amount);
 
-        uint256 currentBlock = getBlockNumber();
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance);
-        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply);
+        uint64 currentBlock = getBlockNumber64();
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192Value());
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192Value());
 
         emit Deposit(msg.sender, _amount);
     }
@@ -109,9 +111,9 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
         uint256 currentTotalSupply = totalSupply();
         uint256 newTotalSupply = currentTotalSupply.sub(_amount);
 
-        uint256 currentBlock = getBlockNumber();
-        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance);
-        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply);
+        uint64 currentBlock = getBlockNumber64();
+        balancesHistory[msg.sender].addCheckpoint(currentBlock, newBalance.toUint192Value());
+        totalSupplyHistory.addCheckpoint(currentBlock, newTotalSupply.toUint192Value());
 
         // Then return ERC20 tokens
         require(depositedToken.safeTransfer(msg.sender, _amount), ERROR_TOKEN_TRANSFER_FAILED);
@@ -188,10 +190,10 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     // Internal fns
 
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
-        return balancesHistory[_owner].getValueAt(_blockNumber);
+        return balancesHistory[_owner].getValueAt(_blockNumber.toUint64Time());
     }
 
     function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
-        return totalSupplyHistory.getValueAt(_blockNumber);
+        return totalSupplyHistory.getValueAt(_blockNumber.toUint64Time());
     }
 }

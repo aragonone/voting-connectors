@@ -14,9 +14,6 @@ pragma solidity ^0.4.24;
  *   - Staking (https://github.com/aragon/staking/blob/master/contracts/Checkpointing.sol)
  */
 library Checkpointing {
-    uint256 private constant MAX_UINT192 = uint256(uint192(-1));
-    uint256 private constant MAX_UINT64 = uint256(uint64(-1));
-
     string private constant ERROR_PAST_CHECKPOINT = "CHECKPOINT_PAST_CHECKPOINT";
     string private constant ERROR_TIME_TOO_BIG = "CHECKPOINT_TIME_TOO_BIG";
     string private constant ERROR_VALUE_TOO_BIG = "CHECKPOINT_VALUE_TOO_BIG";
@@ -30,32 +27,25 @@ library Checkpointing {
         Checkpoint[] history;
     }
 
-    function addCheckpoint(History storage _self, uint256 _time, uint256 _value) internal {
-        require(_time <= MAX_UINT64, ERROR_TIME_TOO_BIG);
-        require(_value <= MAX_UINT192, ERROR_VALUE_TOO_BIG);
-        uint64 castedTime = uint64(_time);
-        uint192 castedValue = uint192(_value);
-
+    function addCheckpoint(History storage _self, uint64 _time, uint192 _value) internal {
         uint256 length = _self.history.length;
         if (length == 0) {
-            _self.history.push(Checkpoint(castedTime, castedValue));
+            _self.history.push(Checkpoint(_time, _value));
         } else {
             Checkpoint storage currentCheckpoint = _self.history[length - 1];
             uint256 currentCheckpointTime = uint256(currentCheckpoint.time);
 
             if (_time > currentCheckpointTime) {
-                _self.history.push(Checkpoint(castedTime, castedValue));
+                _self.history.push(Checkpoint(_time, _value));
             } else if (_time == currentCheckpointTime) {
-                currentCheckpoint.value = castedValue;
+                currentCheckpoint.value = _value;
             } else { // ensure list ordering
                 revert(ERROR_PAST_CHECKPOINT);
             }
         }
     }
 
-    function getValueAt(History storage _self, uint256 _time) internal view returns (uint256) {
-        require(_time <= MAX_UINT64, ERROR_TIME_TOO_BIG);
-
+    function getValueAt(History storage _self, uint64 _time) internal view returns (uint256) {
         return _getValueAt(_self, _time);
     }
 
@@ -77,7 +67,7 @@ library Checkpointing {
         return 0;
     }
 
-    function _getValueAt(History storage _self, uint256 _time) private view returns (uint256) {
+    function _getValueAt(History storage _self, uint64 _time) private view returns (uint256) {
         uint256 length = _self.history.length;
 
         // Short circuit if there's no checkpoints yet
@@ -90,12 +80,12 @@ library Checkpointing {
         // Check last checkpoint
         uint256 lastIndex = length - 1;
         Checkpoint storage lastCheckpoint = _self.history[lastIndex];
-        if (_time >= uint256(lastCheckpoint.time)) {
+        if (_time >= lastCheckpoint.time) {
             return uint256(lastCheckpoint.value);
         }
 
         // Check first checkpoint (if not already checked with the above check on last)
-        if (length == 1 || _time < uint256(_self.history[0].time)) {
+        if (length == 1 || _time < _self.history[0].time) {
             return 0;
         }
 
@@ -107,7 +97,7 @@ library Checkpointing {
         while (high > low) {
             uint256 mid = (high + low + 1) / 2; // average, ceil round
             Checkpoint storage checkpoint = _self.history[mid];
-            uint256 midTime = uint256(checkpoint.time);
+            uint64 midTime = checkpoint.time;
 
             if (_time > midTime) {
                 low = mid;

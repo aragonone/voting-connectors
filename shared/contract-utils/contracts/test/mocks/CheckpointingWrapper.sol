@@ -8,11 +8,11 @@ contract CheckpointingWrapper {
 
     Checkpointing.History history;
 
-    function addCheckpoint(uint256 _time, uint256 _value) external {
+    function addCheckpoint(uint64 _time, uint192 _value) external {
         history.addCheckpoint(_time, _value);
     }
 
-    function getValueAt(uint256 _time) external view returns (uint256) {
+    function getValueAt(uint64 _time) external view returns (uint256) {
         return history.getValueAt(_time);
     }
 
