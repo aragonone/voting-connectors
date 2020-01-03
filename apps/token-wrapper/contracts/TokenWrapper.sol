@@ -126,7 +126,7 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
 
     function balanceOf(address _owner) public view returns (uint256) {
-        return _balanceOfAt(_owner, getBlockNumber64());
+        return _balanceOfAt(_owner, getBlockNumber());
     }
 
     function decimals() public view returns (uint8) {
@@ -135,17 +135,17 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
     }
 
     function totalSupply() public view returns (uint256) {
-        return _totalSupplyAt(getBlockNumber64());
+        return _totalSupplyAt(getBlockNumber());
     }
 
     // Checkpointed fns
     // These functions do **NOT** revert if the app is uninitialized to stay compatible with normal ERC20s.
 
-    function balanceOfAt(address _owner, uint64 _blockNumber) public view returns (uint256) {
+    function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256) {
         return _balanceOfAt(_owner, _blockNumber);
     }
 
-    function totalSupplyAt(uint64 _blockNumber) public view returns (uint256) {
+    function totalSupplyAt(uint256 _blockNumber) public view returns (uint256) {
         return _totalSupplyAt(_blockNumber);
     }
 
@@ -189,11 +189,11 @@ contract TokenWrapper is IERC20WithCheckpointing, IForwarder, IsContract, ERC20V
 
     // Internal fns
 
-    function _balanceOfAt(address _owner, uint64 _blockNumber) internal view returns (uint256) {
-        return balancesHistory[_owner].getValueAt(_blockNumber);
+    function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (uint256) {
+        return balancesHistory[_owner].getValueAt(_blockNumber.toUint64());
     }
 
-    function _totalSupplyAt(uint64 _blockNumber) internal view returns (uint256) {
-        return totalSupplyHistory.getValueAt(_blockNumber);
+    function _totalSupplyAt(uint256 _blockNumber) internal view returns (uint256) {
+        return totalSupplyHistory.getValueAt(_blockNumber.toUint64());
     }
 }
