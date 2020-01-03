@@ -16,16 +16,16 @@ function appStateReducer(state) {
     return { syncing: true }
   }
 
-  const { holders, outsideToken, wrappedToken } = state
+  const { depositedToken, holders, wrappedToken } = state
 
   return {
     ...state,
+    depositedToken: depositedToken && transformTokenData(depositedToken),
     holders:
       holders &&
       holders
         .map(holder => ({ ...holder, balance: new BN(holder.balance) }))
         .sort((a, b) => b.balance.cmp(a.balance)),
-    outsideToken: outsideToken && transformTokenData(outsideToken),
     wrappedToken: wrappedToken && transformTokenData(wrappedToken),
   }
 }

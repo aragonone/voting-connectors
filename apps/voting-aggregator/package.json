@@ -1,6 +1,6 @@
 {
   "name": "@aragonone/apps-voting-aggregator",
-  "version": "0.0.1",
+  "version": "1.0.0-rc.2",
   "description": "Aragon voting aggregator app",
   "author": "Aragon One <legal@aragon.one>",
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
@@ -15,7 +15,7 @@
     "apm:prepublish": "npm run compile",
     "apm:publish": "node scripts/publish",
     "compile": "truffle compile",
-    "build": "cd app && npm run build && cd ..",
+    "build": "",
     "lint": "solium --dir ./contracts",
     "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
     "coverage": "SOLIDITY_COVERAGE=true npm run ganache-cli:test",
@@ -29,11 +29,11 @@
   },
   "dependencies": {
     "@aragon/os": "4.3.0",
-    "@aragonone/voting-connectors-contract-utils": "^1.0.0"
+    "@aragonone/voting-connectors-contract-utils": "^1.0.0-rc.2"
   },
   "devDependencies": {
     "@aragon/apps-shared-migrations": "^1.0.0",
-    "@aragon/cli": "^7.0.0",
+    "@aragon/cli": "^6.4.4",
     "@aragon/test-helpers": "^2.1.0",
     "@aragon/truffle-config-v4": "^1.0.0",
     "ethereumjs-testrpc-sc": "^6.5.1-sc.1",

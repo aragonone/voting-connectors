@@ -16,8 +16,6 @@ const tokenAbi = [].concat(
   tokenSymbolABI,
   tokenTotalSupplyABI
 )
-const tokenContracts = new Map() // Addr -> External contract
-
 const app = new Aragon()
 
 app.store(
@@ -41,40 +39,27 @@ app.store(
 
 async function initState(cachedState) {
   const initializedState = {
-    settings: {},
     ...cachedState,
   }
 
-  // App settings
-  const { settings } = initializedState
-  if (!settings.outsideTokenAddress) {
-    settings.outsideTokenAddress = await getOutsideTokenAddress()
-  }
-  if (!settings.wrappedTokenAddress) {
-    settings.wrappedTokenAddress = await getWrappedTokenAddress()
-  }
-
-  // Token contracts
-  const outsideTokenContract = app.external(
-    settings.outsideTokenAddress,
-    tokenAbi
-  )
-  tokenContracts.set(settings.outsideTokenAddress, outsideTokenContract)
-
-  const wrappedTokenContract = app.external(
-    settings.wrappedTokenAddress,
-    tokenAbi
-  )
-  tokenContracts.set(settings.wrappedTokenAddress, wrappedTokenContract)
-
-  // Token data
-  initializedState.outsideToken = {
-    address: settings.outsideTokenAddress,
-    ...(await getTokenData(outsideTokenContract)),
-  }
+  // Wrapped token details (from the app itself)
+  const currentApp = await app.currentApp().toPromise()
+  const currentAppMethodProxy = new Proxy(app, {
+    get(target, name, receiver) {
+      return (...params) => target.call(name, ...params)
+    },
+  })
   initializedState.wrappedToken = {
-    address: settings.wrappedTokenAddress,
-    ...(await getTokenData(wrappedTokenContract)),
+    address: currentApp.appAddress,
+    ...(await getTokenData(currentAppMethodProxy)),
+  }
+
+  // Deposited token details
+  const depositedTokenAddress = await getDepositedTokenAddress()
+  const depositedTokenContract = app.external(depositedTokenAddress, tokenAbi)
+  initializedState.depositedToken = {
+    address: depositedTokenAddress,
+    ...(await getTokenData(depositedTokenContract)),
   }
 
   app.identify(`${initializedState.wrappedToken.symbol}`)
@@ -88,12 +73,8 @@ async function initState(cachedState) {
  *                     *
  ***********************/
 
-async function getOutsideTokenAddress() {
-  return app.call('erc20').toPromise()
-}
-
-async function getWrappedTokenAddress() {
-  return app.call('token').toPromise()
+async function getDepositedTokenAddress() {
+  return app.call('depositedToken').toPromise()
 }
 
 async function getTokenData(tokenContract) {
@@ -124,17 +105,14 @@ async function getTokenData(tokenContract) {
 }
 
 async function updateHolder(state, event) {
-  const { holders = [], wrappedToken, settings } = state
+  const { holders = [], wrappedToken } = state
   const { entity: account } = event.returnValues
 
   const holderIndex = holders.findIndex(holder =>
     addressesEqual(holder.address, account)
   )
 
-  const wrappedTokenContract = tokenContracts.get(settings.wrappedTokenAddress)
-  const currentBalance = await wrappedTokenContract
-    .balanceOf(account)
-    .toPromise()
+  const currentBalance = await app.call('balanceOf', account).toPromise()
 
   let nextHolders = Array.from(holders)
   if (holderIndex === -1) {
@@ -148,7 +126,7 @@ async function updateHolder(state, event) {
 
   const nextWrappedToken = {
     ...wrappedToken,
-    totalSupply: await wrappedTokenContract.totalSupply().toPromise(),
+    totalSupply: await app.call('totalSupply').toPromise(),
   }
 
   return { ...state, holders: nextHolders, wrappedToken: nextWrappedToken }

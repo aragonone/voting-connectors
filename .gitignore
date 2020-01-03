@@ -11,6 +11,9 @@ node_modules
 # lerna
 lerna-debug.log
 
+# build artifacts
+*/**/dist
+
 # truffle build artifacts
 # Ignore only for first level to select just the contract build directories
 */*/abi

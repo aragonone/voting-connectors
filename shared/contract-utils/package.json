@@ -1,6 +1,6 @@
 {
   "name": "@aragonone/voting-connectors-contract-utils",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.2",
   "description": "Shared contract utilities for voting connectors",
   "author": "Aragon One <legal@aragon.one>",
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",

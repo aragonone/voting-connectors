@@ -16,7 +16,7 @@ import { fromDecimals, toDecimals } from '../utils'
 const MAX_INPUT_DECIMAL_BASE = 6
 
 const WrapTokensPanel = React.memo(
-  ({ action, info, onAction, outsideToken, panelState, wrappedToken }) => {
+  ({ action, info, onAction, depositedToken, panelState, wrappedToken }) => {
     return (
       <SidePanel
         title={action + ' tokens'}
@@ -25,9 +25,9 @@ const WrapTokensPanel = React.memo(
       >
         <WrapTokensPanelContent
           action={action}
+          depositedToken={depositedToken}
           info={info}
           onAction={onAction}
-          outsideToken={outsideToken}
           wrappedToken={wrappedToken}
         />
       </SidePanel>
@@ -37,9 +37,9 @@ const WrapTokensPanel = React.memo(
 
 function WrapTokensPanelContent({
   action,
+  depositedToken,
   info,
   onAction,
-  outsideToken,
   wrappedToken,
 }) {
   const theme = useTheme()
@@ -48,8 +48,8 @@ function WrapTokensPanelContent({
   const tokenInputRef = useSidePanelFocusOnReady()
 
   const tokenData = useMemo(
-    () => (action === 'Wrap' ? outsideToken : wrappedToken),
-    [action, outsideToken, wrappedToken]
+    () => (action === 'Wrap' ? depositedToken : wrappedToken),
+    [action, depositedToken, wrappedToken]
   )
   const handleAmountChange = useCallback(event => {
     setAmount(event.target.value)
@@ -92,7 +92,7 @@ function WrapTokensPanelContent({
             step={tokenStep}
             onChange={handleAmountChange}
             adornment={
-              action === 'Wrap' ? outsideToken.symbol : wrappedToken.symbol
+              action === 'Wrap' ? depositedToken.symbol : wrappedToken.symbol
             }
             adornmentPosition="end"
             adornmentSettings={{
@@ -139,7 +139,7 @@ function WrapTokensPanelContent({
                 color: ${theme.surfaceContentSecondary};
               `}
             >
-              {action === 'Wrap' ? wrappedToken.symbol : outsideToken.symbol}
+              {action === 'Wrap' ? wrappedToken.symbol : depositedToken.symbol}
             </span>
           </div>
         </div>

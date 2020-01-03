@@ -1,4 +1,4 @@
-An Aragon application that allows any ERC20 token to be converted to and from a MiniMe governance token.
+An Aragon application that allows any ERC20 token to be converted to and from a non-transferable, checkpointed governance token.
 
 **Features**
 - Deposit ERC20 tokens to mint governance tokens.
