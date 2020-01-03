@@ -42,9 +42,10 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     uint256 internal constant MAX_SOURCES = 20;
 
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
+    string private constant ERROR_POWER_SOURCE_TYPE_INVALID = "VA_POWER_SOURCE_TYPE_INVALID";
+    string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
     string private constant ERROR_POWER_SOURCE_ALREADY_ADDED = "VA_POWER_SOURCE_ALREADY_ADDED";
     string private constant ERROR_TOO_MANY_POWER_SOURCES = "VA_TOO_MANY_POWER_SOURCES";
-    string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
     string private constant ERROR_ZERO_WEIGHT = "VA_ZERO_WEIGHT";
     string private constant ERROR_SAME_WEIGHT = "VA_SAME_WEIGHT";
     string private constant ERROR_CAN_NOT_FORWARD = "VA_CAN_NOT_FORWARD";
@@ -52,6 +53,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     string private constant ERROR_INVALID_CALL_OR_SELECTOR = "VA_INVALID_CALL_OR_SELECTOR";
 
     enum PowerSourceType {
+        Invalid,
         ERC20WithCheckpointing,
         ERC900
     }
@@ -62,7 +64,6 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     }
 
     struct PowerSource {
-        address addr;
         PowerSourceType sourceType;
         uint256 weight;
         ActivePeriod.History activationHistory;
@@ -72,17 +73,16 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     string public symbol;
     uint8 public decimals;
 
-    mapping (address => bool) public powerSourceAdded;
-    mapping (uint256 => PowerSource) internal powerSources;
-    uint256 public powerSourcesLength;
+    mapping (address => PowerSource) internal powerSourceDetails;
+    address[] public powerSources;
 
-    event AddPowerSource(uint256 indexed sourceId, address indexed sourceAddress, PowerSourceType sourceType, uint256 weight);
-    event ChangePowerSourceWeight(uint256 indexed sourceId, uint256 newWeight);
-    event DisablePowerSource(uint256 indexed sourceId);
-    event EnablePowerSource(uint256 indexed sourceId);
+    event AddPowerSource(address indexed sourceAddress, PowerSourceType sourceType, uint256 weight);
+    event ChangePowerSourceWeight(address indexed sourceAddress, uint256 newWeight);
+    event DisablePowerSource(address indexed sourceAddress);
+    event EnablePowerSource(address indexed sourceAddress);
 
-    modifier sourceExists(uint256 _sourceId) {
-        require(_sourceId < powerSourcesLength, ERROR_NO_POWER_SOURCE);
+    modifier sourceExists(address _sourceAddr) {
+        require(_powerSourceExists(_sourceAddr), ERROR_NO_POWER_SOURCE);
         _;
     }
 
@@ -105,62 +105,62 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
      * @param _sourceAddr Address of the power source
      * @param _sourceType Interface type of the power source
      * @param _weight Weight to assign to the source
-     * @return Id of added power source
      */
     function addPowerSource(address _sourceAddr, PowerSourceType _sourceType, uint256 _weight)
         external
         authP(ADD_POWER_SOURCE_ROLE, arr(_sourceAddr, _weight))
-        returns (uint256)
     {
-        require(!powerSourceAdded[_sourceAddr], ERROR_POWER_SOURCE_ALREADY_ADDED);
-        require(powerSourcesLength < MAX_SOURCES, ERROR_TOO_MANY_POWER_SOURCES);
-        require(isContract(_sourceAddr), ERROR_POWER_SOURCE_NOT_CONTRACT);
+        // Sanity check arguments
+        require(
+            _sourceType == PowerSourceType.ERC20WithCheckpointing || _sourceType == PowerSourceType.ERC900,
+            ERROR_POWER_SOURCE_TYPE_INVALID
+        );
         require(_weight > 0, ERROR_ZERO_WEIGHT);
+        require(isContract(_sourceAddr), ERROR_POWER_SOURCE_NOT_CONTRACT);
 
-        uint256 newSourceId = powerSourcesLength++;
+        // Ensure internal consistency
+        require(!_powerSourceExists(_sourceAddr), ERROR_POWER_SOURCE_ALREADY_ADDED);
+        require(powerSources.length < MAX_SOURCES, ERROR_TOO_MANY_POWER_SOURCES);
 
-        PowerSource storage source = powerSources[newSourceId];
-        source.addr = _sourceAddr;
+        // Add source
+        powerSources.push(_sourceAddr);
+
+        PowerSource storage source = powerSourceDetails[_sourceAddr];
         source.sourceType = _sourceType;
         source.weight = _weight;
 
         // Start activation history with [current block, max block)
         source.activationHistory.startNextPeriodFrom(getBlockNumber());
 
-        // Remember that this source address has been added, to disallow adding duplicate sources
-        powerSourceAdded[_sourceAddr] = true;
-
-        emit AddPowerSource(newSourceId, _sourceAddr, _sourceType, _weight);
-
-        return newSourceId;
+        emit AddPowerSource(_sourceAddr, _sourceType, _weight);
     }
 
     /**
-     * @notice Change weight of power source #`_sourceId` to `_weight`
-     * @param _sourceId Power source id
+     * @notice Change weight of power source at `_sourceAddr` to `_weight`
+     * @param _sourceAddr Power source's address
      * @param _weight New weight to assign
      */
-    function changeSourceWeight(uint256 _sourceId, uint256 _weight)
+    function changeSourceWeight(address _sourceAddr, uint256 _weight)
         external
-        authP(MANAGE_WEIGHTS_ROLE, arr(_weight, powerSources[_sourceId].weight))
-        sourceExists(_sourceId)
+        authP(MANAGE_WEIGHTS_ROLE, arr(_weight, powerSourceDetails[_sourceAddr].weight))
+        sourceExists(_sourceAddr)
     {
         require(_weight > 0, ERROR_ZERO_WEIGHT);
-        require(powerSources[_sourceId].weight != _weight, ERROR_SAME_WEIGHT);
-        powerSources[_sourceId].weight = _weight;
-        emit ChangePowerSourceWeight(_sourceId, _weight);
+        require(powerSourceDetails[_sourceAddr].weight != _weight, ERROR_SAME_WEIGHT);
+        powerSourceDetails[_sourceAddr].weight = _weight;
+        emit ChangePowerSourceWeight(_sourceAddr, _weight);
     }
 
     /**
-     * @notice Disable power source #`_sourceId`
-     * @param _sourceId Power source id
+     * @notice Disable power source at `_sourceAddr`
+     * @param _sourceAddr Power source's address
      */
-    function disableSource(uint256 _sourceId)
+    function disableSource(address _sourceAddr)
         external
         authP(MANAGE_POWER_SOURCE_ROLE, arr(uint256(0)))
-        sourceExists(_sourceId)
+        sourceExists(_sourceAddr)
     {
-        PowerSource storage source = powerSources[_sourceId];
+        PowerSource storage source = powerSourceDetails[_sourceAddr];
 
         // Disable after this block
         // This makes sure any queries to this aggregator this block are still consistent until the
@@ -168,24 +168,24 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         // Ignore SafeMath here; we will have bigger issues if this overflows
         source.activationHistory.stopCurrentPeriodAt(getBlockNumber() + 1);
 
-        emit DisablePowerSource(_sourceId);
+        emit DisablePowerSource(_sourceAddr);
     }
 
     /**
-     * @notice Enable power source #`_sourceId`
-     * @param _sourceId Power source id
+     * @notice Enable power source at `_sourceAddr`
+     * @param _sourceAddr Power source's address
      */
-    function enableSource(uint256 _sourceId)
+    function enableSource(address _sourceAddr)
         external
-        sourceExists(_sourceId)
+        sourceExists(_sourceAddr)
         authP(MANAGE_POWER_SOURCE_ROLE, arr(uint256(1)))
     {
-        PowerSource storage source = powerSources[_sourceId];
+        PowerSource storage source = powerSourceDetails[_sourceAddr];
 
         // Add new activation period with [current block, max block)
         source.activationHistory.startNextPeriodFrom(getBlockNumber());
 
-        emit EnablePowerSource(_sourceId);
+        emit EnablePowerSource(_sourceAddr);
     }
 
     // ERC20 fns - note that this token is a non-transferrable "view-only" implementation.
@@ -249,26 +249,23 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
     /**
      * @dev Return information about a power source
-     * @param _sourceId Power source id
-     * @return Power source address
+     * @param _sourceAddr Power source's address
      * @return Power source type
      * @return Power source weight
      * @return Number of activation history points
      */
-    function getPowerSource(uint256 _sourceId)
+    function getPowerSourceDetails(address _sourceAddr)
         public
         view
-        sourceExists(_sourceId)
+        sourceExists(_sourceAddr)
         returns (
-            address sourceAddress,
             PowerSourceType sourceType,
             uint256 weight,
             uint256 historyLength
         )
     {
-        PowerSource storage source = powerSources[_sourceId];
+        PowerSource storage source = powerSourceDetails[_sourceAddr];
 
-        sourceAddress = source.addr;
         sourceType = source.sourceType;
         weight = source.weight;
         historyLength = source.activationHistory.history.length;
@@ -276,24 +273,32 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
 
     /**
      * @dev Return information about a power source's activation history
-     * @param _sourceId Power source id
+     * @param _sourceAddr Power source's address
      * @param _periodIndex Index of activation history
      * @return Start block of activation period
      * @return End block of activation period
      */
-    function getPowerSourceActivationPeriod(uint256 _sourceId, uint256 _periodIndex)
+    function getPowerSourceActivationPeriod(address _sourceAddr, uint256 _periodIndex)
         public
         view
-        sourceExists(_sourceId)
+        sourceExists(_sourceAddr)
         returns (
             uint128 enabledFromBlock,
             uint128 disabledOnBlock
         )
     {
-        ActivePeriod.Period storage period = powerSources[_sourceId].activationHistory.getPeriod(_periodIndex);
+        ActivePeriod.Period storage period = powerSourceDetails[_sourceAddr].activationHistory.getPeriod(_periodIndex);
 
         enabledFromBlock = period.enabledFromTime;
         disabledOnBlock = period.disabledOnTime;
+    }
+
+    /**
+     * @dev Return number of added power sources
+     * @return Number of added power sources
+     */
+    function getPowerSourcesLength() public view isInitialized returns (uint256) {
+        return powerSources.length;
     }
 
     // Internal fns
@@ -301,12 +306,13 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     function _aggregateAt(uint256 _blockNumber, CallType _callType, bytes memory _paramdata) internal view returns (uint256) {
         uint256 aggregate = 0;
 
-        for (uint256 i = 0; i < powerSourcesLength; i++) {
-            PowerSource storage source = powerSources[i];
+        for (uint256 i = 0; i < powerSources.length; i++) {
+            address sourceAddr = powerSources[i];
+            PowerSource storage source = powerSourceDetails[sourceAddr];
 
             if (source.activationHistory.isEnabledAt(_blockNumber)) {
                 bytes memory invokeData = abi.encodePacked(_selectorFor(_callType, source.sourceType), _paramdata);
-                (bool success, uint256 value) = source.addr.staticInvoke(invokeData);
+                (bool success, uint256 value) = sourceAddr.staticInvoke(invokeData);
                 require(success, ERROR_SOURCE_CALL_FAILED);
 
                 aggregate = aggregate.add(source.weight.mul(value));
@@ -314,6 +320,11 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         }
 
         return aggregate;
+    }
+
+    function _powerSourceExists(address _sourceAddr) internal view returns (bool) {
+        // All attached power sources must have a valid source type
+        return powerSourceDetails[_sourceAddr].sourceType != PowerSourceType.Invalid;
     }
 
     function _selectorFor(CallType _callType, PowerSourceType _sourceType) internal pure returns (bytes4) {
