@@ -12,23 +12,23 @@ contract ERC20ViewRevertMock is ERC20 {
         revertsOnSupply = _revertsOnSupply;
     }
 
-    function transfer(address _to, uint256 _amount) public returns (bool success) {
+    function transfer(address, uint256) public returns (bool success) {
         return false;
     }
 
-    function transferFrom(address _from, address _to, uint256 _amount) public returns (bool success) {
+    function transferFrom(address, address, uint256) public returns (bool success) {
         return false;
     }
 
-    function approve(address _spender, uint256 _amount) public returns (bool success) {
+    function approve(address, uint256) public returns (bool success) {
         return false;
     }
 
-    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+    function allowance(address, address) public view returns (uint256 remaining) {
         return 0;
     }
 
-    function balanceOf(address _owner) public view returns (uint256 balance) {
+    function balanceOf(address) public view returns (uint256 balance) {
         if (revertsOnBalance) {
             revert("BALANCE_OF_REVERT");
         }
