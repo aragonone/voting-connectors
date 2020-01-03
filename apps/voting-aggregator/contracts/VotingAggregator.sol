@@ -17,7 +17,6 @@ import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20W
 
 import "./interfaces/IERC900History.sol";
 
-
 /**
  * @title VotingAggregator
  * @notice Voting power aggregator across many sources that provides a "view-only" checkpointed
@@ -37,7 +36,13 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
     bytes32 public constant MANAGE_POWER_SOURCE_ROLE = 0x79ac9d2706bbe6bcdb60a65ba8145a498f6d506aaa455baa7675dff5779cb99f;
     bytes32 public constant MANAGE_WEIGHTS_ROLE = 0xa36fcade8375289791865312a33263fdc82d07e097c13524c9d6436c0de396ff;
 
+    // Arbitrary number, but having anything close to this number would most likely be unwieldy.
+    // Note the primary protection this provides is to ensure that one cannot continue adding
+    // sources to break gas limits even with all sources disabled.
+    uint256 internal constant MAX_SOURCES = 20;
+
     string private constant ERROR_NO_POWER_SOURCE = "VA_NO_POWER_SOURCE";
+    string private constant ERROR_TOO_MANY_POWER_SOURCES = "VA_TOO_MANY_POWER_SOURCES";
     string private constant ERROR_POWER_SOURCE_NOT_CONTRACT = "VA_POWER_SOURCE_NOT_CONTRACT";
     string private constant ERROR_ZERO_WEIGHT = "VA_ZERO_WEIGHT";
     string private constant ERROR_SAME_WEIGHT = "VA_SAME_WEIGHT";
@@ -105,6 +110,7 @@ contract VotingAggregator is IERC20WithCheckpointing, IForwarder, IsContract, ER
         authP(ADD_POWER_SOURCE_ROLE, arr(_sourceAddr, _weight))
         returns (uint256)
     {
+        require(powerSourcesLength < MAX_SOURCES, ERROR_TOO_MANY_POWER_SOURCES);
         require(isContract(_sourceAddr), ERROR_POWER_SOURCE_NOT_CONTRACT);
         require(_weight > 0, ERROR_ZERO_WEIGHT);
 
