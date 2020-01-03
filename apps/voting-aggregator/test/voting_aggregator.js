@@ -23,10 +23,13 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
   const ERC20WithCheckpointing = 0
   const ERC900 = 1
 
+  let dao, acl
   let votingAggregatorBase, votingAggregator
   let ADD_POWER_SOURCE_ROLE, MANAGE_POWER_SOURCE_ROLE, MANAGE_WEIGHTS_ROLE
 
   before(async () => {
+    ({ dao, acl } = await deployDao(root))
+
     votingAggregatorBase = await VotingAggregator.new()
 
     ADD_POWER_SOURCE_ROLE = await votingAggregatorBase.ADD_POWER_SOURCE_ROLE()
@@ -35,8 +38,6 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
   })
 
   beforeEach('deploy dao with voting aggregator', async () => {
-    const { dao, acl } = await deployDao(root)
-
     const installReceipt = await dao.newAppInstance('0x1234', votingAggregatorBase.address, '0x', false, { from: root })
     votingAggregator = VotingAggregator.at(getNewProxyAddress(installReceipt))
 
@@ -51,19 +52,20 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2]) => {
     assert.equal(MANAGE_WEIGHTS_ROLE, web3.sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
   })
 
-  describe('initialize', () => {
+  describe('App is not initialized yet', () => {
     const name = 'Voting Aggregator'
     const symbol = 'VA'
     const decimals = 18
 
     it('initializes app', async () => {
       await votingAggregator.initialize(name, symbol, decimals)
+      assert.isTrue(await votingAggregator.hasInitialized(), 'not initialized')
       assert.equal(await votingAggregator.name(), name, 'name mismatch')
       assert.equal(await votingAggregator.symbol(), symbol, 'symbol mismatch')
       assert.equal((await votingAggregator.decimals()).toString(), decimals, 'decimals mismatch')
     })
 
-    it('cannot init twice', async () => {
+    it('cannot be initialized twice', async () => {
       await votingAggregator.initialize(name, symbol, decimals)
       await assertRevert(votingAggregator.initialize(name, symbol, decimals), ERROR_ALREADY_INITIALIZED)
     })
