@@ -15,8 +15,6 @@ pragma solidity ^0.4.24;
  */
 library Checkpointing {
     string private constant ERROR_PAST_CHECKPOINT = "CHECKPOINT_PAST_CHECKPOINT";
-    string private constant ERROR_TIME_TOO_BIG = "CHECKPOINT_TIME_TOO_BIG";
-    string private constant ERROR_VALUE_TOO_BIG = "CHECKPOINT_VALUE_TOO_BIG";
 
     struct Checkpoint {
         uint64 time;
