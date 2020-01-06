@@ -132,8 +132,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('fails to add power source if broken', async () => {
-        const brokenBalanceToken = await ERC20ViewRevertMock.new(true, false)
-        const brokenSupplyToken = await ERC20ViewRevertMock.new(false, true)
+        const brokenBalanceToken = await ERC20ViewRevertMock.new()
+        await brokenBalanceToken.disableBalanceOf()
+        const brokenSupplyToken = await ERC20ViewRevertMock.new()
+        await brokenSupplyToken.disableTotalSupply()
 
         await assertRevert(
           votingAggregator.addPowerSource(brokenBalanceToken.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
