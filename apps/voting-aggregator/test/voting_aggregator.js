@@ -2,14 +2,17 @@ const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 const { getEventArgument, getNewProxyAddress } = require('@aragon/test-helpers/events')
 const { assertAmountOfEvents } = require('@aragon/test-helpers/assertEvent')(web3)
 const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
+const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
 
 const { deployDao } = require('./helpers/deploy.js')(artifacts)
 
 const VotingAggregator = artifacts.require('VotingAggregator')
 
+const ERC20Sample = artifacts.require('ERC20Sample')
 const ERC20ViewRevertMock = artifacts.require('ERC20ViewRevertMock')
-const Token = artifacts.require('TokenMock')
-const Staking = artifacts.require('StakingMock')
+const ThinCheckpointedTokenMock = artifacts.require('ThinCheckpointedTokenMock')
+const ThinStaking = artifacts.require('ThinStakingMock')
+const ExecutionTarget = artifacts.require('ExecutionTarget')
 
 const MAX_SOURCES = 20
 
@@ -22,6 +25,8 @@ const ERROR_POWER_SOURCE_ALREADY_ADDED = 'VA_POWER_SOURCE_ALREADY_ADDED'
 const ERROR_TOO_MANY_POWER_SOURCES = 'VA_TOO_MANY_POWER_SOURCES'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
 const ERROR_SAME_WEIGHT = 'VA_SAME_WEIGHT'
+const ERROR_SOURCE_NOT_ENABLED = 'VA_SOURCE_NOT_ENABLED'
+const ERROR_SOURCE_NOT_DISABLED = 'VA_SOURCE_NOT_DISABLED'
 const ERROR_CAN_NOT_FORWARD = 'VA_CAN_NOT_FORWARD'
 const ERROR_SOURCE_CALL_FAILED = 'VA_SOURCE_CALL_FAILED'
 const ERROR_INVALID_CALL_OR_SELECTOR = 'VA_INVALID_CALL_OR_SELECTOR'
@@ -62,6 +67,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
     assert.equal(MANAGE_WEIGHTS_ROLE, web3.sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
   })
 
+  it('is a forwarder', async () => {
+    assert.isTrue(await votingAggregator.isForwarder())
+  })
+
   describe('App is not initialized yet', () => {
     const name = 'Voting Aggregator'
     const symbol = 'VA'
@@ -90,7 +99,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       const decimals = 18
 
       await votingAggregator.initialize(name, symbol, decimals)
-      token = await Token.new() // mints 1M e 18 tokens to sender
+      token = await ThinCheckpointedTokenMock.new() // mints 1M e 18 tokens to sender
     })
 
     describe('Add power source', () => {
@@ -119,7 +128,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('fails to add power source if the wrong type is given', async () => {
-        const staking = await Staking.new()
+        const staking = await ThinStaking.new()
 
         await assertRevert(
           votingAggregator.addPowerSource(token.address, PowerSourceType.ERC900, 1, { from: root }),
@@ -132,8 +141,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('fails to add power source if broken', async () => {
-        const brokenBalanceToken = await ERC20ViewRevertMock.new(true, false)
-        const brokenSupplyToken = await ERC20ViewRevertMock.new(false, true)
+        const brokenBalanceToken = await ERC20ViewRevertMock.new()
+        await brokenBalanceToken.disableBalanceOf()
+        const brokenSupplyToken = await ERC20ViewRevertMock.new()
+        await brokenSupplyToken.disableTotalSupply()
 
         await assertRevert(
           votingAggregator.addPowerSource(brokenBalanceToken.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
@@ -166,6 +177,9 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
           'power sources length not incremented'
         )
 
+        const powerSourceAddress = await votingAggregator.powerSources(0)
+        assert.equal(powerSourceAddress, token.address, 'source address mismatch')
+
         const powerSource = await votingAggregator.getPowerSourceDetails(token.address)
         assert.equal(powerSource[0], type, 'source type mismatch')
         assert.isTrue(powerSource[1], 'source enabled mismatch')
@@ -184,7 +198,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         // Add maximum number of sources to voting aggregator
         const tokens = []
         for (let ii = 0; ii < MAX_SOURCES; ++ii) {
-          tokens[ii] = await Token.new()
+          tokens[ii] = await ThinCheckpointedTokenMock.new()
         }
         for (const token of tokens) {
           await votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root })
@@ -192,7 +206,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         assert.equal(tokens.length, MAX_SOURCES, 'added number of tokens should match max sources')
 
         // Adding one more should fail
-        const oneTooMany = await Token.new()
+        const oneTooMany = await ThinCheckpointedTokenMock.new()
         await assertRevert(
           votingAggregator.addPowerSource(oneTooMany.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
           ERROR_TOO_MANY_POWER_SOURCES
@@ -210,7 +224,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       beforeEach('add power source', async () => {
         const type = PowerSourceType.ERC20WithCheckpointing
-        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
       })
 
       it('fails to change power source weight if does not have permission', async () => {
@@ -250,7 +264,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       beforeEach('add power source', async () => {
         const type = PowerSourceType.ERC20WithCheckpointing
         const weight = 1
-        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
       })
 
       it('fails to disable power source if does not have permission', async () => {
@@ -259,6 +273,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       it('fails to disable power source if source does not exist', async () => {
         await assertRevert(votingAggregator.disableSource(someone, { from: root }), ERROR_NO_POWER_SOURCE)
+      })
+
+      it('fails to disable power source if source not enabled', async () => {
+        await votingAggregator.disableSource(sourceAddr, { from: root })
+
+        await assertRevert(votingAggregator.disableSource(sourceAddr, { from: root }), ERROR_SOURCE_NOT_ENABLED)
       })
 
       it('disables power source', async () => {
@@ -280,7 +300,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       beforeEach('add and disable power source', async () => {
         const type = PowerSourceType.ERC20WithCheckpointing
         const weight = 1
-        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
 
         await votingAggregator.disableSource(sourceAddr, { from: root })
       })
@@ -291,6 +311,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       it('fails to enable power source if source does not exist', async () => {
         await assertRevert(votingAggregator.enableSource(someone, { from: root }), ERROR_NO_POWER_SOURCE)
+      })
+
+      it('fails to enable power source if source not disabled', async () => {
+        await votingAggregator.enableSource(sourceAddr, { from: root })
+
+        await assertRevert(votingAggregator.enableSource(sourceAddr, { from: root }), ERROR_SOURCE_NOT_DISABLED)
       })
 
       it('enables power source', async () => {
@@ -310,6 +336,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         { address: user2, amount: new web3.BigNumber(2e18)}
       ]
       const checkpoints = [1, 2, 3].map(c => new web3.BigNumber(c))
+      const lastCheckpoint = checkpoints[checkpoints.length - 1]
 
       const addBalances = async (blockNumber) => {
         Promise.all(users.map(
@@ -324,7 +351,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       beforeEach('deploy staking, add sources', async () => {
         // deploy staking
-        staking = await Staking.new()
+        staking = await ThinStaking.new()
 
         // add sources
         const tokenWeight = 1
@@ -337,6 +364,11 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
           '2',
           'number of added power sources not correct'
         )
+
+        const sourceAddr1 = await votingAggregator.powerSources(0)
+        const sourceAddr2 = await votingAggregator.powerSources(1)
+        assert.equal(sourceAddr1, token.address, 'first source should be token')
+        assert.equal(sourceAddr2, staking.address, 'second source should be token')
       })
 
       context('When all sources are enabled', () => {
@@ -357,6 +389,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
                 `balance doesn't match for user ${user.address} and checkpoint ${checkpoint}`
               )
             }
+
+            assert.equal(
+              (await votingAggregator.balanceOf(user.address)).toString(),
+              (await votingAggregator.balanceOfAt(user.address, lastCheckpoint)).toString(),
+              "balance doesn't match between balanceOf() and balanceOfAt() for latest checkpoint"
+            )
           }
         })
 
@@ -370,6 +408,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
                 new web3.BigNumber(0)
               ).toString(),
               `total supply doesn't match at checkpoint ${checkpoint}`
+            )
+
+            assert.equal(
+              (await votingAggregator.totalSupply()).toString(),
+              (await votingAggregator.totalSupplyAt(lastCheckpoint)).toString(),
+              "totalSupply doesn't match between totalSupply() and totalSupplyOfAt() for latest checkpoint"
             )
           }
         })
@@ -415,6 +459,72 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
             )
           }
         })
+      })
+
+      context('When some sources are broken', () => {
+        let brokenSource
+
+        beforeEach('add broken source', async () => {
+          const brokenBalanceToken = await ERC20ViewRevertMock.new()
+          brokenSource = brokenBalanceToken.address
+          await votingAggregator.addPowerSource(brokenBalanceToken.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root })
+
+          // Break token
+          await brokenBalanceToken.disableBalanceOf()
+        })
+
+        it('fails to aggregate if source is broken after being added', async () => {
+          await assertRevert(votingAggregator.balanceOf(user1), ERROR_SOURCE_CALL_FAILED)
+        })
+
+        it('can aggregate after broken source is disabled', async () => {
+          await votingAggregator.disableSource(brokenSource, { from: root })
+
+          assert.doesNotThrow(async () => await votingAggregator.balanceOf(user1))
+        })
+      })
+    })
+
+    describe('Forwarding', () => {
+      let sourceAddr
+      let executionTarget
+
+      before(async () => {
+        const sampleToken = await ERC20Sample.new()
+        sourceAddr = sampleToken.address
+        await sampleToken.transfer(user1, new web3.BigNumber(1e18))
+        await sampleToken.transfer(user2, new web3.BigNumber(1e18))
+
+        executionTarget = await ExecutionTarget.new()
+      })
+
+      beforeEach('add power source', async () => {
+        const type = PowerSourceType.ERC20WithCheckpointing
+        const weight = 1
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+      })
+
+      it('allows accounts with voting power to forward', async () => {
+        assert.isTrue(await votingAggregator.canForward(user1, '0x'))
+      })
+
+      it('allows accounts with voting power to successfully execute forward', async () => {
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const script = encodeCallScript([action])
+
+        await votingAggregator.forward(script, { from: user1 })
+        assert.equal((await executionTarget.counter()).toString(), 1, 'should have received execution call')
+      })
+
+      it('fails to forward if account does not have voting power', async () => {
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const script = encodeCallScript([action])
+
+        assert.isFalse(
+          await votingAggregator.canForward(someone, '0x'),
+          'should not say someone without voting power can forward'
+        )
+        await assertRevert(votingAggregator.forward(script, { from: someone }), ERROR_CAN_NOT_FORWARD)
       })
     })
   })
