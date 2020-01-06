@@ -2,14 +2,17 @@ const { assertRevert } = require('@aragon/test-helpers/assertThrow')
 const { getEventArgument, getNewProxyAddress } = require('@aragon/test-helpers/events')
 const { assertAmountOfEvents } = require('@aragon/test-helpers/assertEvent')(web3)
 const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
+const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
 
 const { deployDao } = require('./helpers/deploy.js')(artifacts)
 
 const VotingAggregator = artifacts.require('VotingAggregator')
 
+const ERC20Sample = artifacts.require('ERC20Sample')
 const ERC20ViewRevertMock = artifacts.require('ERC20ViewRevertMock')
 const ThinCheckpointedTokenMock = artifacts.require('ThinCheckpointedTokenMock')
 const ThinStaking = artifacts.require('ThinStakingMock')
+const ExecutionTarget = artifacts.require('ExecutionTarget')
 
 const MAX_SOURCES = 20
 
@@ -60,6 +63,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
     assert.equal(ADD_POWER_SOURCE_ROLE, web3.sha3('ADD_POWER_SOURCE_ROLE'), 'ADD_POWER_SOURCE_ROLE not encoded correctly')
     assert.equal(MANAGE_POWER_SOURCE_ROLE, web3.sha3('MANAGE_POWER_SOURCE_ROLE'), 'MANAGE_POWER_SOURCE_ROLE not encoded correctly')
     assert.equal(MANAGE_WEIGHTS_ROLE, web3.sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
+  })
+
+  it('is a forwarder', async () => {
+    assert.isTrue(await votingAggregator.isForwarder())
   })
 
   describe('App is not initialized yet', () => {
@@ -417,6 +424,49 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
             )
           }
         })
+      })
+    })
+
+    describe('Forwarding', () => {
+      let sourceAddr
+      let executionTarget
+
+      before(async () => {
+        const sampleToken = await ERC20Sample.new()
+        sourceAddr = sampleToken.address
+        await sampleToken.transfer(user1, new web3.BigNumber(1e18))
+        await sampleToken.transfer(user2, new web3.BigNumber(1e18))
+
+        executionTarget = await ExecutionTarget.new()
+      })
+
+      beforeEach('add power source', async () => {
+        const type = PowerSourceType.ERC20WithCheckpointing
+        const weight = 1
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+      })
+
+      it('allows accounts with voting power to forward', async () => {
+        assert.isTrue(await votingAggregator.canForward(user1, '0x'))
+      })
+
+      it('allows accounts with voting power to successfully execute forward', async () => {
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const script = encodeCallScript([action])
+
+        await votingAggregator.forward(script, { from: user1 })
+        assert.equal((await executionTarget.counter()).toString(), 1, 'should have received execution call')
+      })
+
+      it('fails to forward if account does not have voting power', async () => {
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const script = encodeCallScript([action])
+
+        assert.isFalse(
+          await votingAggregator.canForward(someone, '0x'),
+          'should not say someone without voting power can forward'
+        )
+        await assertRevert(votingAggregator.forward(script, { from: someone }), ERROR_CAN_NOT_FORWARD)
       })
     })
   })
