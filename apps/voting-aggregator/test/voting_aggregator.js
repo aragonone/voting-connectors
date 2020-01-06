@@ -177,6 +177,9 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
           'power sources length not incremented'
         )
 
+        const powerSourceAddress = await votingAggregator.powerSources(0)
+        assert.equal(powerSourceAddress, token.address, 'source address mismatch')
+
         const powerSource = await votingAggregator.getPowerSourceDetails(token.address)
         assert.equal(powerSource[0], type, 'source type mismatch')
         assert.isTrue(powerSource[1], 'source enabled mismatch')
@@ -360,6 +363,11 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
           '2',
           'number of added power sources not correct'
         )
+
+        const sourceAddr1 = await votingAggregator.powerSources(0)
+        const sourceAddr2 = await votingAggregator.powerSources(1)
+        assert.equal(sourceAddr1, token.address, 'first source should be token')
+        assert.equal(sourceAddr2, staking.address, 'second source should be token')
       })
 
       context('When all sources are enabled', () => {
