@@ -224,7 +224,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       beforeEach('add power source', async () => {
         const type = PowerSourceType.ERC20WithCheckpointing
-        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
       })
 
       it('fails to change power source weight if does not have permission', async () => {
@@ -264,7 +264,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       beforeEach('add power source', async () => {
         const type = PowerSourceType.ERC20WithCheckpointing
         const weight = 1
-        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
       })
 
       it('fails to disable power source if does not have permission', async () => {
@@ -300,7 +300,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       beforeEach('add and disable power source', async () => {
         const type = PowerSourceType.ERC20WithCheckpointing
         const weight = 1
-        const receipt = await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
+        await votingAggregator.addPowerSource(sourceAddr, type, weight, { from: root })
 
         await votingAggregator.disableSource(sourceAddr, { from: root })
       })
