@@ -336,6 +336,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         { address: user2, amount: new web3.BigNumber(2e18)}
       ]
       const checkpoints = [1, 2, 3].map(c => new web3.BigNumber(c))
+      const lastCheckpoint = checkpoints[checkpoints.length - 1]
 
       const addBalances = async (blockNumber) => {
         Promise.all(users.map(
@@ -388,6 +389,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
                 `balance doesn't match for user ${user.address} and checkpoint ${checkpoint}`
               )
             }
+
+            assert.equal(
+              (await votingAggregator.balanceOf(user.address)).toString(),
+              (await votingAggregator.balanceOfAt(user.address, lastCheckpoint)).toString(),
+              "balance doesn't match between balanceOf() and balanceOfAt() for latest checkpoint"
+            )
           }
         })
 
@@ -401,6 +408,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
                 new web3.BigNumber(0)
               ).toString(),
               `total supply doesn't match at checkpoint ${checkpoint}`
+            )
+
+            assert.equal(
+              (await votingAggregator.totalSupply()).toString(),
+              (await votingAggregator.totalSupplyAt(lastCheckpoint)).toString(),
+              "totalSupply doesn't match between totalSupply() and totalSupplyOfAt() for latest checkpoint"
             )
           }
         })
@@ -445,6 +458,29 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
               `total supply doesn't match at checkpoint ${checkpoint}`
             )
           }
+        })
+      })
+
+      context('When some sources are broken', () => {
+        let brokenSource
+
+        beforeEach('add broken source', async () => {
+          const brokenBalanceToken = await ERC20ViewRevertMock.new()
+          brokenSource = brokenBalanceToken.address
+          await votingAggregator.addPowerSource(brokenBalanceToken.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root })
+
+          // Break token
+          await brokenBalanceToken.disableBalanceOf()
+        })
+
+        it('fails to aggregate if source is broken after being added', async () => {
+          await assertRevert(votingAggregator.balanceOf(user1), ERROR_SOURCE_CALL_FAILED)
+        })
+
+        it('can aggregate after broken source is disabled', async () => {
+          await votingAggregator.disableSource(brokenSource, { from: root })
+
+          assert.doesNotThrow(async () => await votingAggregator.balanceOf(user1))
         })
       })
     })
