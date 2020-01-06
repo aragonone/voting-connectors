@@ -25,6 +25,8 @@ const ERROR_POWER_SOURCE_ALREADY_ADDED = 'VA_POWER_SOURCE_ALREADY_ADDED'
 const ERROR_TOO_MANY_POWER_SOURCES = 'VA_TOO_MANY_POWER_SOURCES'
 const ERROR_ZERO_WEIGHT = 'VA_ZERO_WEIGHT'
 const ERROR_SAME_WEIGHT = 'VA_SAME_WEIGHT'
+const ERROR_SOURCE_NOT_ENABLED = 'VA_SOURCE_NOT_ENABLED'
+const ERROR_SOURCE_NOT_DISABLED = 'VA_SOURCE_NOT_DISABLED'
 const ERROR_CAN_NOT_FORWARD = 'VA_CAN_NOT_FORWARD'
 const ERROR_SOURCE_CALL_FAILED = 'VA_SOURCE_CALL_FAILED'
 const ERROR_INVALID_CALL_OR_SELECTOR = 'VA_INVALID_CALL_OR_SELECTOR'
@@ -270,6 +272,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         await assertRevert(votingAggregator.disableSource(someone, { from: root }), ERROR_NO_POWER_SOURCE)
       })
 
+      it('fails to disable power source if source not enabled', async () => {
+        await votingAggregator.disableSource(sourceAddr, { from: root })
+
+        await assertRevert(votingAggregator.disableSource(sourceAddr, { from: root }), ERROR_SOURCE_NOT_ENABLED)
+      })
+
       it('disables power source', async () => {
         const receipt = await votingAggregator.disableSource(sourceAddr, { from: root })
         assertAmountOfEvents(receipt, 'DisablePowerSource')
@@ -300,6 +308,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       it('fails to enable power source if source does not exist', async () => {
         await assertRevert(votingAggregator.enableSource(someone, { from: root }), ERROR_NO_POWER_SOURCE)
+      })
+
+      it('fails to enable power source if source not disabled', async () => {
+        await votingAggregator.enableSource(sourceAddr, { from: root })
+
+        await assertRevert(votingAggregator.enableSource(sourceAddr, { from: root }), ERROR_SOURCE_NOT_DISABLED)
       })
 
       it('enables power source', async () => {
