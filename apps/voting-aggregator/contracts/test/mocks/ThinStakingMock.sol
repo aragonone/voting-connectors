@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 
-contract StakingMock {
+contract ThinStakingMock {
     mapping (address => mapping (uint256 => uint256)) internal balances;
     mapping (uint256 => uint256) internal totals;
 

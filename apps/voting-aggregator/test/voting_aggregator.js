@@ -8,8 +8,8 @@ const { deployDao } = require('./helpers/deploy.js')(artifacts)
 const VotingAggregator = artifacts.require('VotingAggregator')
 
 const ERC20ViewRevertMock = artifacts.require('ERC20ViewRevertMock')
-const Token = artifacts.require('TokenMock')
-const Staking = artifacts.require('StakingMock')
+const ThinCheckpointedTokenMock = artifacts.require('ThinCheckpointedTokenMock')
+const ThinStaking = artifacts.require('ThinStakingMock')
 
 const MAX_SOURCES = 20
 
@@ -90,7 +90,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       const decimals = 18
 
       await votingAggregator.initialize(name, symbol, decimals)
-      token = await Token.new() // mints 1M e 18 tokens to sender
+      token = await ThinCheckpointedTokenMock.new() // mints 1M e 18 tokens to sender
     })
 
     describe('Add power source', () => {
@@ -119,7 +119,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('fails to add power source if the wrong type is given', async () => {
-        const staking = await Staking.new()
+        const staking = await ThinStaking.new()
 
         await assertRevert(
           votingAggregator.addPowerSource(token.address, PowerSourceType.ERC900, 1, { from: root }),
@@ -186,7 +186,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         // Add maximum number of sources to voting aggregator
         const tokens = []
         for (let ii = 0; ii < MAX_SOURCES; ++ii) {
-          tokens[ii] = await Token.new()
+          tokens[ii] = await ThinCheckpointedTokenMock.new()
         }
         for (const token of tokens) {
           await votingAggregator.addPowerSource(token.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root })
@@ -194,7 +194,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         assert.equal(tokens.length, MAX_SOURCES, 'added number of tokens should match max sources')
 
         // Adding one more should fail
-        const oneTooMany = await Token.new()
+        const oneTooMany = await ThinCheckpointedTokenMock.new()
         await assertRevert(
           votingAggregator.addPowerSource(oneTooMany.address, PowerSourceType.ERC20WithCheckpointing, 1, { from: root }),
           ERROR_TOO_MANY_POWER_SOURCES
@@ -326,7 +326,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
       beforeEach('deploy staking, add sources', async () => {
         // deploy staking
-        staking = await Staking.new()
+        staking = await ThinStaking.new()
 
         // add sources
         const tokenWeight = 1
