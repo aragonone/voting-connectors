@@ -50,7 +50,7 @@ contract ExampleTemplate is TemplateBase {
 
     function newInstance(ERC20 _depositedToken) public {
         Kernel dao = fac.newDAO(this);
-        emit SetupDao(dao);
+        emit DeployDao(dao);
 
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
