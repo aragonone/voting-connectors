@@ -13,18 +13,18 @@ import "@aragon/os/contracts/lib/token/ERC20.sol";
  * @dev Implemented functions at this level **NEVER** revert
  */
 contract ERC20ViewOnly is ERC20 {
-    string private constant ERROR_TOKEN_ONLY = "ERC20_VIEW_ONLY";
+    string private constant ERROR_ERC20_VIEW_ONLY = "ERC20_VIEW_ONLY";
 
     function approve(address, uint256) public returns (bool) {
-        revert(ERROR_TOKEN_ONLY);
+        revert(ERROR_ERC20_VIEW_ONLY);
     }
 
     function transfer(address, uint256) public returns (bool) {
-        revert(ERROR_TOKEN_ONLY);
+        revert(ERROR_ERC20_VIEW_ONLY);
     }
 
     function transferFrom(address, address, uint256) public returns (bool) {
-        revert(ERROR_TOKEN_ONLY);
+        revert(ERROR_ERC20_VIEW_ONLY);
     }
 
     function allowance(address, address) public view returns (uint256) {
