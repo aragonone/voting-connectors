@@ -1,9 +1,9 @@
 const { BN } = require('web3-utils')
 
-const { assertRevert } = require('@aragonone/voting-connectors-contract-utils/test/helpers/assertThrow')
-const { getNewProxyAddress } = require('@aragon/test-helpers/events')
-const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
-const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
+const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
+const { getNewProxyAddress } = require('@aragon/contract-helpers-test/events')
+const getBlockNumber = require('@aragon/contract-helpers-test/blockNumber')(web3)
+const { encodeCallScript } = require('@aragon/contract-helpers-test/evmScript')
 
 const { deployDao } = require('@aragonone/voting-connectors-contract-utils/test/helpers/deploy.js')(artifacts)
 

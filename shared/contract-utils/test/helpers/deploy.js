@@ -1,4 +1,4 @@
-const { getEventArgument } = require('@aragon/test-helpers/events')
+const { getEventArgument } = require('@aragon/contract-helpers-test/events')
 
 module.exports = (artifacts) => {
   const deployDao = async (owner) => {
