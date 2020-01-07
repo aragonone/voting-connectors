@@ -1,6 +1,6 @@
 const { BN } = require('web3-utils')
 
-const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
+const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
 
 const bn = x => new BN(x)
 
