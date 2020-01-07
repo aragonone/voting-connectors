@@ -1,4 +1,4 @@
-const truffleConfig = require('@aragon/truffle-config-v4')
+const truffleConfig = require('@aragon/truffle-config-v5')
 
 truffleConfig.plugins = ["solidity-coverage"]
 truffleConfig.compilers = {
