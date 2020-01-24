@@ -41,6 +41,12 @@ export function useWrapTokensAction(onDone = noop) {
           value: amount,
           spender: currentApp.appAddress,
         },
+        // While it's generally a bad idea to hardcode gas in intents, in the case of token deposits
+        // it prevents metamask from doing the gas estimation and telling the user that their
+        // transaction will fail (before the approve is mined).
+        // The actual gas cost is around ~130k but we do the estimation with some breathing room
+        // in case it is being forwarded (unlikely in deposit).
+        gas: 200000,
       }
 
       // Don't care about response
