@@ -1,6 +1,6 @@
 {
   "name": "@aragonone/apps-voting-aggregator",
-  "version": "1.0.0-rc.3",
+  "version": "1.0.0",
   "description": "Aragon voting aggregator app",
   "author": "Aragon One <legal@aragon.one>",
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
