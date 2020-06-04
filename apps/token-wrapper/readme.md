@@ -23,27 +23,32 @@ In efforts to save gas costs and space to introduce the checkpointing, token amo
 dao install <DAO address> token-wrapper.hatch.aragonpm.eth --app-init-args <Token address> <Wrapped token name> <Wrapped token symbol> --env aragon:rinkeby
 ```
 
-This will install the new app that acts as a Minime token.
+This will install the new app that acts as a [Minime token](https://github.com/Giveth/minime).
 
 
 ### 2. Next, create a permission for the TokenWrapper:
 
 ```
-dao acl create <dao address> <token-wrapper address> ROLE <voting app address> <voting app address> --env aragon:rinkeby
+dao acl create <DAO address> <token-wrapper address> ROLE <voting app address> <voting app address> --env aragon:rinkeby
 ``` 
 You can get the token-wrapper address by listing the apps of your DAO with the following command: 
 ```
-dao apps <dao address> --all --env aragon:rinkeby
+dao apps <DAO address> --all --env aragon:rinkeby
 ```
 At this point, you should be able to view the TokenWrapper app in the frontend. You can try it out by wrapping one of your tokens.
 
 ### 3. Then, create a new voting app instance linked to your wrapped tokens:
 ```
-dao install <dao address> voting --app-init-args <token-wrapper address> 500000000000000000 150000000000000000 604800 --env aragon:rinkeby
+dao install <DAO address> voting --app-init-args <token-wrapper address> 500000000000000000 150000000000000000 604800 --env aragon:rinkeby
 ```
+The voting parameters in the command are:
+
+- `500000000000000000`: 50% minimum support
+- `150000000000000000`: 15% minimum approval
+- `604800`: Voting period of 7 days (604800 seconds)
 
 ### 4. And finally, create a permission for the new Voting app instance:
 ```
-dao acl create <dao address> <new voting app address> CREATE_VOTES_ROLE <token-wrapper address> <new voting app address> --env aragon:rinkeby
+dao acl create <DAO address> <new voting app address> CREATE_VOTES_ROLE <token-wrapper address> <new voting app address> --env aragon:rinkeby
 ```
-This will basically let anyone who has wrapped one of their existing ERC-20 token to create a new vote.
+This will let anyone who has wrapped at least one of their existing token to create a new vote.
