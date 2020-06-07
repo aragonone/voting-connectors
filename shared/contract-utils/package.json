@@ -15,8 +15,8 @@
     "compile": "truffle compile",
     "lint": "solium --dir ./contracts",
     "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
-    "coverage": "SOLIDITY_COVERAGE=true npm run ganache-cli:test",
-    "ganache-cli:test": "./node_modules/@aragon/test-helpers/ganache-cli.sh",
+    "coverage": "SOLIDITY_COVERAGE=true npx truffle run coverage",
+    "ganache-cli:test": "./node_modules/@aragon/contract-test-helpers/ganache-cli.sh",
     "truffle:dev": "npx truffle dev",
     "abi:extract": "truffle-extract --output abi/ --keys abi",
     "prepublishOnly": "truffle compile --all && npm run abi:extract -- --no-compile"
@@ -26,13 +26,12 @@
   },
   "devDependencies": {
     "@aragon/apps-shared-migrations": "1.0.0",
-    "@aragon/test-helpers": "^2.1.0",
-    "@aragon/truffle-config-v4": "^1.0.0",
-    "ethereumjs-testrpc-sc": "^6.5.1-sc.1",
+    "@aragon/contract-test-helpers": "^0.0.1",
+    "@aragon/truffle-config-v5": "^1.0.0",
     "ganache-cli": "^6.4.3",
-    "solidity-coverage": "^0.6.7",
+    "solidity-coverage": "^0.7.5",
     "solium": "^1.2.3",
-    "truffle": "4.1.14",
+    "truffle": "^5.1.1",
     "truffle-extract": "^1.2.1"
   }
 }

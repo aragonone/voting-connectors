@@ -18,7 +18,6 @@ import "@aragonone/voting-connectors-contract-utils/contracts/interfaces/IERC20W
 
 import "./interfaces/IERC900History.sol";
 
-
 /**
  * @title VotingAggregator
  * @notice Voting power aggregator across many sources that provides a "view-only" checkpointed

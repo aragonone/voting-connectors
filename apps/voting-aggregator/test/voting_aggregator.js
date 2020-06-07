@@ -1,10 +1,12 @@
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
-const { getEventArgument, getNewProxyAddress } = require('@aragon/test-helpers/events')
-const { assertAmountOfEvents } = require('@aragon/test-helpers/assertEvent')(web3)
-const getBlockNumber = require('@aragon/test-helpers/blockNumber')(web3)
-const { encodeCallScript } = require('@aragon/test-helpers/evmScript')
+const { BN, sha3 } = require('web3-utils')
 
-const { deployDao } = require('./helpers/deploy.js')(artifacts)
+const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
+const { getEventArgument, getNewProxyAddress } = require('@aragon/contract-test-helpers/events')
+const { assertAmountOfEvents } = require('@aragon/contract-test-helpers/assertEvent')
+const getBlockNumber = require('@aragon/contract-test-helpers/blockNumber')(web3)
+const { encodeCallScript } = require('@aragon/contract-test-helpers/evmScript')
+
+const { deployDao } = require('@aragonone/voting-connectors-contract-utils/test/helpers/deploy.js')(artifacts)
 
 const VotingAggregator = artifacts.require('VotingAggregator')
 
@@ -31,6 +33,9 @@ const ERROR_CAN_NOT_FORWARD = 'VA_CAN_NOT_FORWARD'
 const ERROR_SOURCE_CALL_FAILED = 'VA_SOURCE_CALL_FAILED'
 const ERROR_INVALID_CALL_OR_SELECTOR = 'VA_INVALID_CALL_OR_SELECTOR'
 
+const bn = x => new BN(x)
+const bigExp = (x, y) => bn(x).mul(bn(10).pow(bn(y)))
+
 contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone]) => {
   const PowerSourceType = {
     Invalid: 0,
@@ -54,7 +59,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
 
   beforeEach('deploy dao with voting aggregator', async () => {
     const installReceipt = await dao.newAppInstance('0x1234', votingAggregatorBase.address, '0x', false, { from: root })
-    votingAggregator = VotingAggregator.at(getNewProxyAddress(installReceipt))
+    votingAggregator = await VotingAggregator.at(getNewProxyAddress(installReceipt))
 
     await acl.createPermission(root, votingAggregator.address, ADD_POWER_SOURCE_ROLE, root, { from: root })
     await acl.createPermission(root, votingAggregator.address, MANAGE_POWER_SOURCE_ROLE, root, { from: root })
@@ -62,9 +67,9 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
   })
 
   it('has correct roles encoded', async () => {
-    assert.equal(ADD_POWER_SOURCE_ROLE, web3.sha3('ADD_POWER_SOURCE_ROLE'), 'ADD_POWER_SOURCE_ROLE not encoded correctly')
-    assert.equal(MANAGE_POWER_SOURCE_ROLE, web3.sha3('MANAGE_POWER_SOURCE_ROLE'), 'MANAGE_POWER_SOURCE_ROLE not encoded correctly')
-    assert.equal(MANAGE_WEIGHTS_ROLE, web3.sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
+    assert.equal(ADD_POWER_SOURCE_ROLE, sha3('ADD_POWER_SOURCE_ROLE'), 'ADD_POWER_SOURCE_ROLE not encoded correctly')
+    assert.equal(MANAGE_POWER_SOURCE_ROLE, sha3('MANAGE_POWER_SOURCE_ROLE'), 'MANAGE_POWER_SOURCE_ROLE not encoded correctly')
+    assert.equal(MANAGE_WEIGHTS_ROLE, sha3('MANAGE_WEIGHTS_ROLE'), 'MANAGE_WEIGHTS_ROLE not encoded correctly')
   })
 
   it('is a forwarder', async () => {
@@ -172,7 +177,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         const receipt = await votingAggregator.addPowerSource(token.address, type, weight, { from: root })
         assertAmountOfEvents(receipt, 'AddPowerSource')
         assert.equal(
-          (numPowerSourcesAtStart.add(new web3.BigNumber(1))).toString(),
+          (numPowerSourcesAtStart.add(bn(1))).toString(),
           (await votingAggregator.getPowerSourcesLength()).toString(),
           'power sources length not incremented'
         )
@@ -332,10 +337,10 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       let staking
 
       const users = [
-        { address: user1, amount: new web3.BigNumber(1e18)},
-        { address: user2, amount: new web3.BigNumber(2e18)}
+        { address: user1, amount: bigExp(1, 18) },
+        { address: user2, amount: bigExp(2, 18) }
       ]
-      const checkpoints = [1, 2, 3].map(c => new web3.BigNumber(c))
+      const checkpoints = [1, 2, 3].map(c => bn(c))
       const lastCheckpoint = checkpoints[checkpoints.length - 1]
 
       const addBalances = async (blockNumber) => {
@@ -343,7 +348,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
           user => checkpoints.map(
             checkpoint => [
               token.addBalanceAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint)),
-              staking.stakeForAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint).mul(new web3.BigNumber(2)))
+              staking.stakeForAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint).mul(bn(2)))
             ]
           )
         ).reduce((acc, val) => acc.concat(val), []))
@@ -375,7 +380,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         let blockNumber
 
         beforeEach('add balances', async () => {
-          blockNumber = new web3.BigNumber(await getBlockNumber())
+          blockNumber = bn(await getBlockNumber())
           await addBalances(blockNumber)
         })
 
@@ -385,7 +390,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
               const checkpoint = blockNumber.add(checkpointOffset)
               assert.equal(
                 (await votingAggregator.balanceOfAt(user.address, checkpoint)).toString(),
-                user.amount.mul(checkpointOffset).mul(new web3.BigNumber(7)).toString(),
+                user.amount.mul(checkpointOffset).mul(bn(7)).toString(),
                 `balance doesn't match for user ${user.address} and checkpoint ${checkpoint}`
               )
             }
@@ -404,8 +409,8 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
             assert.equal(
               (await votingAggregator.totalSupplyAt(checkpoint)).toString(),
               users.reduce(
-                (acc, user) => acc.add(user.amount.mul(checkpointOffset).mul(new web3.BigNumber(7)).toString()),
-                new web3.BigNumber(0)
+                (acc, user) => acc.add(user.amount.mul(checkpointOffset).mul(bn(7))),
+                bn(0)
               ).toString(),
               `total supply doesn't match at checkpoint ${checkpoint}`
             )
@@ -428,7 +433,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         })
 
         beforeEach('add balances', async () => {
-          blockNumber = new web3.BigNumber(await getBlockNumber())
+          blockNumber = bn(await getBlockNumber())
 
           await addBalances(blockNumber)
         })
@@ -452,8 +457,8 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
             assert.equal(
               (await votingAggregator.totalSupplyAt(checkpoint)).toString(),
               users.reduce(
-                (acc, user) => acc.add(user.amount.mul(checkpointOffset).toString()),
-                new web3.BigNumber(0)
+                (acc, user) => acc.add(user.amount.mul(checkpointOffset)),
+                bn(0)
               ).toString(),
               `total supply doesn't match at checkpoint ${checkpoint}`
             )
@@ -492,8 +497,8 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       before(async () => {
         const sampleToken = await ERC20Sample.new()
         sourceAddr = sampleToken.address
-        await sampleToken.transfer(user1, new web3.BigNumber(1e18))
-        await sampleToken.transfer(user2, new web3.BigNumber(1e18))
+        await sampleToken.transfer(user1, bigExp(1, 18))
+        await sampleToken.transfer(user2, bigExp(1, 18))
 
         executionTarget = await ExecutionTarget.new()
       })
@@ -509,7 +514,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('allows accounts with voting power to successfully execute forward', async () => {
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
         const script = encodeCallScript([action])
 
         await votingAggregator.forward(script, { from: user1 })
@@ -517,7 +522,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       })
 
       it('fails to forward if account does not have voting power', async () => {
-        const action = { to: executionTarget.address, calldata: executionTarget.contract.execute.getData() }
+        const action = { to: executionTarget.address, calldata: executionTarget.contract.methods.execute().encodeABI() }
         const script = encodeCallScript([action])
 
         assert.isFalse(
