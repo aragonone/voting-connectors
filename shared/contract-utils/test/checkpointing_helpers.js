@@ -1,4 +1,8 @@
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { BN } = require('web3-utils')
+
+const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
+
+const bn = x => new BN(x)
 
 contract('Checkpointing Helpers test', () => {
   let checkpointingHelpersMock
@@ -13,7 +17,7 @@ contract('Checkpointing Helpers test', () => {
   })
 
   it('fails converting from uint256 to uint64 if too big', async () => {
-    const a = new web3.BigNumber(2).pow(64)
+    const a = bn(2).pow(bn(64))
     await assertRevert(checkpointingHelpersMock.convertUint64(a))
   })
 
@@ -23,7 +27,7 @@ contract('Checkpointing Helpers test', () => {
   })
 
   it('fails converting from uint256 to uint192 if too big', async () => {
-    const a = new web3.BigNumber(2).pow(192)
+    const a = bn(2).pow(bn(192))
     await assertRevert(checkpointingHelpersMock.convertUint192(a))
   })
 })

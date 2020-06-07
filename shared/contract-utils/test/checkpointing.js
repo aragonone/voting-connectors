@@ -1,6 +1,11 @@
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { BN } = require('web3-utils')
+
+const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
 
 const CheckpointingWrapper = artifacts.require('CheckpointingWrapper')
+
+const bn = x => new BN(x)
+const bigExp = (x, y) => bn(x).mul(bn(10).pow(bn(y)))
 
 contract('Checkpointing', () => {
   let checkpointing
