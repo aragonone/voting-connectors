@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@aragon/os": "4.3.0",
-    "@aragonone/voting-connectors-contract-utils": "^1.0.0-rc.3"
+    "@aragonone/voting-connectors-contract-utils": "^1.0.0"
   },
   "devDependencies": {
     "@aragon/apps-shared-migrations": "^1.0.0",
