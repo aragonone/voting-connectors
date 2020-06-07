@@ -4,9 +4,11 @@ Token Wrapper is an Aragon app offering a checkpointed ERC20 token interface tha
 
 Token holders of the outside token have the ability to wrap and unwrap their tokens to gain or decrease balance in this wrapped token.
 
-## 🚨 Not yet audited, use at your own risk
+## 🚨 Security review status: audited
 
-The `TokenWrapper` contract has not yet been professionally audited. It is relatively simple, but use with this asterisk in mind.
+The `TokenWrapper` contract was [last professionally audited in 2020-01](../../AUDIT.md).
+
+This version was published to aragonPM as `token-wrapper.hatch.aragonpm.eth`.
 
 ## Caveats
 
@@ -22,7 +24,7 @@ In efforts to save gas costs and space to introduce the checkpointing, token amo
 dao install <DAO address> token-wrapper.hatch.aragonpm.eth --app-init-args <token address> <wrapped token name> <wrapped token symbol> --env aragon:rinkeby
 ```
 
-The `token address` is the address of the ERC20 token you would like users to "wrap" into an organizational [MiniMe token](https://github.com/aragon/minime).
+The `token address` is the address of the ERC20 token you would like to "wrap" into an organizational token.
 
 You can verify that the Token Wrapper app was installed into your organization with:
 

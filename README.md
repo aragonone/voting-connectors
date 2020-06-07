@@ -15,14 +15,18 @@ contract IERC20WithCheckpointing {
 }
 ```
 
-An example of such a Voting app is [aragon-apps/voting](https://github.com/aragon/aragon-apps/tree/master/apps/voting).
+An example of one such Voting app is [aragon-apps/voting](https://github.com/aragon/aragon-apps/tree/master/apps/voting).
 
-## Apps
+## Included apps
 
-- **[Token Wrapper](apps/token-wrapper)**: Wrap external tokens to a checkpointed token.
+- **[Token Wrapper](apps/token-wrapper)**: Wrap external tokens into a checkpointed token.
 - **[Voting Aggregator](apps/voting-aggregator)**: Aggregate voting power over multiple sources.
 
 Each of the individual apps come with a frontend that is intended to be installed and used through the [Aragon client](http://github.com/aragon/aragon).
+
+## 🚨 Security review status: audited
+
+Each individual app may be audited at a different time, and past audits are documented in [AUDITS.md](./AUDITS.md).
 
 ## Quick start
 
@@ -42,7 +46,7 @@ Running tests on all apps can be done by running `npm run test` at the root dire
 
 Running tests of an individual app can be done by running `npm run test` inside an individual app's directory, or through the selective `npm run test:<app>` scripts.
 
-By default, tests are run on an in-memory instance of testrpc.
+By default, tests are run on an in-memory instance of ganache.
 
 ## Contributing
 
