@@ -1,6 +1,6 @@
 {
   "name": "@aragonone/apps-voting-aggregator",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0",
   "description": "Aragon voting aggregator app",
   "author": "Aragon One <legal@aragon.one>",
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@aragon/os": "4.3.0",
-    "@aragonone/voting-connectors-contract-utils": "^1.0.0-rc.2"
+    "@aragonone/voting-connectors-contract-utils": "^1.0.0-rc.3"
   },
   "devDependencies": {
     "@aragon/apps-shared-migrations": "^1.0.0",

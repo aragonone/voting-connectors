@@ -1,6 +1,6 @@
 {
   "name": "@aragonone/voting-connectors-contract-utils",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Shared contract utilities for voting connectors",
   "author": "Aragon One <legal@aragon.one>",
   "license": "(GPL-3.0-or-later OR AGPL-3.0-or-later)",
@@ -28,9 +28,8 @@
     "@aragon/apps-shared-migrations": "1.0.0",
     "@aragon/contract-test-helpers": "^0.0.1",
     "@aragon/truffle-config-v5": "^1.0.0",
-    "ethereumjs-testrpc-sc": "^6.5.1-sc.1",
     "ganache-cli": "^6.4.3",
-    "solidity-coverage": "^0.7.0",
+    "solidity-coverage": "^0.7.5",
     "solium": "^1.2.3",
     "truffle": "^5.1.1",
     "truffle-extract": "^1.2.1"

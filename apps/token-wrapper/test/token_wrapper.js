@@ -34,6 +34,10 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
     tokenWrapper = await TokenWrapper.at(getNewProxyAddress(installReceipt))
   })
 
+  it('is a forwarder', async () => {
+    assert.isTrue(await tokenWrapper.isForwarder())
+  })
+
   describe('App is not initialized yet', () => {
     let erc20
 
@@ -75,10 +79,6 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
 
     it('wraps the correct erc20 token', async () => {
       assert.equal(await tokenWrapper.depositedToken(), erc20.address)
-    })
-
-    it('is a forwarder', async () => {
-      assert.isTrue(await tokenWrapper.isForwarder())
     })
 
     context('account has no deposited tokens', () => {

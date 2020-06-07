@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 
-contract TokenMock {
+contract ThinCheckpointedTokenMock {
     mapping (address => mapping (uint256 => uint256)) internal balances;
     mapping (uint256 => uint256) internal totals;
 
