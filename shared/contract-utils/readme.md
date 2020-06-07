@@ -2,6 +2,6 @@
 
 Shared contracts, libraries, and interfaces for creating connector apps to Aragon Voting applications.
 
-## 🚨 Not yet audited, use at your own risk
+## 🚨 Security review status: audited
 
-These contracts have not yet been professionally audited.
+These utility contracts were [last professionally audited in 2020-01 for the Token Wrapper and Voting Aggregator apps](../../AUDIT.md).
