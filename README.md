@@ -26,7 +26,7 @@ Each of the individual apps come with a frontend that is intended to be installe
 
 ## 🚨 Security review status: audited
 
-Each individual app may be audited at a different time, and past audits are documented in [AUDITS.md](./AUDITS.md).
+Each individual app may be audited at a different time, and past audits are documented in [AUDIT.md](./AUDIT.md).
 
 ## Quick start
 
