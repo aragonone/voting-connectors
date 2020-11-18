@@ -4,5 +4,8 @@ module.exports = {
     'test',
     '@aragon/os',
     '@aragon/contract-helpers-test'
-  ]
+  ],
+  mocha: {
+    timeout: 200000
+  }
 }
