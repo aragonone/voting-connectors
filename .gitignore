@@ -7,20 +7,23 @@ node_modules
 */**/coverage.json
 */**/allFiredEvents
 */**/scTopics
-
+*/**/.coverage_*
 # lerna
 lerna-debug.log
 
 # build artifacts
 */**/dist
 
-# truffle build artifacts
+# contract build artifacts
 # Ignore only for first level to select just the contract build directories
 */*/abi
 */*/build
+*/*/artifacts
+*/*/cache
 
 # lock files
 package-lock.json
+yarn.lock
 
 # Misc
 .DS_Store

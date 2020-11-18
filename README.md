@@ -38,15 +38,13 @@ This installs global package dependencies and also bootstraps the entire monorep
 
 > **Note**: the monorepo is set up in such a way that you **must** install it through a `lerna bootstrap` (done automatically after an `npm install`).
 >
-> If you're only interested in the contract dependencies, and not the frontends, you can use `INSTALL_FRONTEND=false npm install` instead.
->
 > If you're only interested in bootstrapping one package, you can use `npx lerna bootstrap --scope @aragon/<package> --include-filtered-dependencies`
 
 Running tests on all apps can be done by running `npm run test` at the root directory (note that running all of the tests can take a significant amount of time!).
 
 Running tests of an individual app can be done by running `npm run test` inside an individual app's directory, or through the selective `npm run test:<app>` scripts.
 
-By default, tests are run on an in-memory instance of ganache.
+By default, tests are run on an in-memory instance of buidler.
 
 ## Contributing
 

@@ -1,8 +1,5 @@
-const { BN } = require('web3-utils')
-
-const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
-
-const bn = x => new BN(x)
+const { bn } = require('@aragon/contract-helpers-test/src/numbers')
+const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts')
 
 contract('Checkpointing Helpers test', () => {
   let checkpointingHelpersMock
