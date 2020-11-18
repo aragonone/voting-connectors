@@ -1,8 +1,9 @@
 {
   "environments": {
-    "default": {
-      "appName": "token-wrapper.open.aragonpm.eth",
-      "network": "rpc"
+    "localhost": {
+      "appName": "token-wrapper.aragonpm.eth",
+      "network": "rpc",
+      "registry": "0x5f6f7e8cc7346a11ca2def8f827b7a0b612c56a1"
     },
     "mainnet": {
       "appName": "token-wrapper.hatch.aragonpm.eth",
@@ -29,6 +30,7 @@
       "wsRPC": "wss://rinkeby.eth.aragon.network/ws"
     }
   },
+  "appName": "token-wrapper.aragonpm.eth",
   "roles": [],
   "path": "contracts/TokenWrapper.sol"
 }

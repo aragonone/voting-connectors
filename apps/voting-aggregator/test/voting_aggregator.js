@@ -1,12 +1,9 @@
-const { BN, sha3 } = require('web3-utils')
+const { assertRevert, assertAmountOfEvents } = require('@aragon/contract-helpers-test/src/asserts')
+const { latestBlock } = require('@aragon/contract-helpers-test/src/time')
+const { newDao, installNewApp, encodeCallScript } = require('@aragon/contract-helpers-test/src/aragon-os')
+const { bn, bigExp } = require('@aragon/contract-helpers-test/src/numbers')
+const { sha3 } = require('web3-utils')
 
-const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
-const { getEventArgument, getNewProxyAddress } = require('@aragon/contract-test-helpers/events')
-const { assertAmountOfEvents } = require('@aragon/contract-test-helpers/assertEvent')
-const getBlockNumber = require('@aragon/contract-test-helpers/blockNumber')(web3)
-const { encodeCallScript } = require('@aragon/contract-test-helpers/evmScript')
-
-const { deployDao } = require('@aragonone/voting-connectors-contract-utils/test/helpers/deploy.js')(artifacts)
 
 const VotingAggregator = artifacts.require('VotingAggregator')
 
@@ -33,8 +30,7 @@ const ERROR_CAN_NOT_FORWARD = 'VA_CAN_NOT_FORWARD'
 const ERROR_SOURCE_CALL_FAILED = 'VA_SOURCE_CALL_FAILED'
 const ERROR_INVALID_CALL_OR_SELECTOR = 'VA_INVALID_CALL_OR_SELECTOR'
 
-const bn = x => new BN(x)
-const bigExp = (x, y) => bn(x).mul(bn(10).pow(bn(y)))
+const APP_ID = '0x1234123412341234123412341234123412341234123412341234123412341234'
 
 contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone]) => {
   const PowerSourceType = {
@@ -48,7 +44,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
   let ADD_POWER_SOURCE_ROLE, MANAGE_POWER_SOURCE_ROLE, MANAGE_WEIGHTS_ROLE
 
   before(async () => {
-    ({ dao, acl } = await deployDao(root))
+    ({ dao, acl } = await newDao(root))
 
     votingAggregatorBase = await VotingAggregator.new()
 
@@ -58,8 +54,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
   })
 
   beforeEach('deploy dao with voting aggregator', async () => {
-    const installReceipt = await dao.newAppInstance('0x1234', votingAggregatorBase.address, '0x', false, { from: root })
-    votingAggregator = await VotingAggregator.at(getNewProxyAddress(installReceipt))
+    votingAggregator = await VotingAggregator.at(await installNewApp(dao, APP_ID, votingAggregatorBase.address, root))
 
     await acl.createPermission(root, votingAggregator.address, ADD_POWER_SOURCE_ROLE, root, { from: root })
     await acl.createPermission(root, votingAggregator.address, MANAGE_POWER_SOURCE_ROLE, root, { from: root })
@@ -344,14 +339,12 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
       const lastCheckpoint = checkpoints[checkpoints.length - 1]
 
       const addBalances = async (blockNumber) => {
-        Promise.all(users.map(
-          user => checkpoints.map(
-            checkpoint => [
-              token.addBalanceAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint)),
-              staking.stakeForAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint).mul(bn(2)))
-            ]
-          )
-        ).reduce((acc, val) => acc.concat(val), []))
+        for (const user of users) {
+          for (const checkpoint of checkpoints) {
+            await token.addBalanceAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint)),
+            await staking.stakeForAt(user.address, blockNumber.add(checkpoint), user.amount.mul(checkpoint).mul(bn(2)))
+          }
+        }
       }
 
       beforeEach('deploy staking, add sources', async () => {
@@ -380,7 +373,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         let blockNumber
 
         beforeEach('add balances', async () => {
-          blockNumber = bn(await getBlockNumber())
+          blockNumber = bn(await latestBlock())
           await addBalances(blockNumber)
         })
 
@@ -433,8 +426,7 @@ contract('VotingAggregator', ([_, root, unprivileged, eoa, user1, user2, someone
         })
 
         beforeEach('add balances', async () => {
-          blockNumber = bn(await getBlockNumber())
-
+          blockNumber = bn(await latestBlock())
           await addBalances(blockNumber)
         })
 

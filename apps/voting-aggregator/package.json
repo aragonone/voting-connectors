@@ -12,34 +12,33 @@
     "/test"
   ],
   "scripts": {
-    "apm:prepublish": "npm run compile",
-    "apm:publish": "node scripts/publish",
-    "compile": "truffle compile",
+    "compile": "buidler compile --force",
     "build": "",
     "lint": "solium --dir ./contracts",
-    "test": "TRUFFLE_TEST=true npm run ganache-cli:test",
-    "coverage": "SOLIDITY_COVERAGE=true npx truffle run coverage",
-    "start": "npm run start:ipfs",
-    "start:app": "cd app && npm start && cd ..",
-    "start:ipfs": "./scripts/run.sh ipfs",
-    "start:http": "./scripts/run.sh http",
-    "ganache-cli:test": "./node_modules/@aragon/contract-test-helpers/ganache-cli.sh",
-    "abi:extract": "truffle-extract --output abi/ --keys abi",
-    "prepublishOnly": "truffle compile --all && npm run abi:extract -- --no-compile"
+    "test": "buidler test --network buidlerevm",
+    "test:gas": "REPORT_GAS=true buidler test --network localhost",
+    "coverage": "buidler coverage --network coverage",
+    "abi:extract": "buidler-extract --output abi/ --keys abi",
+    "publish:major": "buidler publish major",
+    "publish:minor": "buidler publish minor",
+    "publish:patch": "buidler publish patch"
   },
   "dependencies": {
     "@aragon/os": "4.3.0",
     "@aragonone/voting-connectors-contract-utils": "^1.0.0"
   },
   "devDependencies": {
-    "@aragon/apps-shared-migrations": "^1.0.0",
-    "@aragon/cli": "^6.4.4",
-    "@aragon/contract-test-helpers": "^0.0.1",
-    "@aragon/truffle-config-v5": "^1.0.0",
-    "ganache-cli": "^6.4.3",
+    "@aragon/buidler-aragon": "^0.2.0",
+    "@aragon/contract-helpers-test": "^0.1.0",
+    "@nomiclabs/buidler": "^1.3.0",
+    "@nomiclabs/buidler-etherscan": "^1.3.0",
+    "@nomiclabs/buidler-solhint": "^1.3.3",
+    "@nomiclabs/buidler-truffle5": "^1.3.0",
+    "@nomiclabs/buidler-web3": "^1.3.0",
+    "buidler-extract": "^1.0.0",
+    "buidler-gas-reporter": "^0.1.4",
+    "ethlint": "^1.2.4",
     "solidity-coverage": "^0.7.5",
-    "solium": "^1.2.3",
-    "truffle": "^5.1.1",
-    "truffle-extract": "^1.2.1"
+    "web3": "^1.2.0"
   }
 }

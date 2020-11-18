@@ -1,37 +1,28 @@
-const { BN } = require('web3-utils')
-
-const { assertRevert } = require('@aragon/contract-test-helpers/assertThrow')
-const { getNewProxyAddress } = require('@aragon/contract-test-helpers/events')
-const getBlockNumber = require('@aragon/contract-test-helpers/blockNumber')(web3)
-const { encodeCallScript } = require('@aragon/contract-test-helpers/evmScript')
-
-const { deployDao } = require('@aragonone/voting-connectors-contract-utils/test/helpers/deploy.js')(artifacts)
+const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts')
+const { latestBlock } = require('@aragon/contract-helpers-test/src/time')
+const { newDao, installNewApp, encodeCallScript } = require('@aragon/contract-helpers-test/src/aragon-os')
+const { bn, bigExp } = require('@aragon/contract-helpers-test/src/numbers')
 
 const ERC20 = artifacts.require('ERC20Sample')
 const ERC20Disablable = artifacts.require('ERC20Disablable')
 const TokenWrapper = artifacts.require('TokenWrapper')
 const ExecutionTarget = artifacts.require('ExecutionTarget')
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-
-const bn = x => new BN(x)
-const bigExp = (x, y) => bn(x).mul(bn(10).pow(bn(y)))
-
 contract('TokenWrapper', ([_, root, holder, someone]) => {
   const wrappedName = 'Token Wrapper'
   const wrappedSymbol = 'TWR'
+  const APP_ID = '0x1234123412341234123412341234123412341234123412341234123412341234'
 
-  let dao, acl
+  let dao
   let tokenWrapperBase, tokenWrapper
 
   before('deploy base', async () => {
-    ({ dao, acl } = await deployDao(root))
+    ({dao} = await newDao(root))
     tokenWrapperBase = await TokenWrapper.new()
   })
 
   beforeEach('deploy dao with uninitialized token wrapper', async () => {
-    const installReceipt = await dao.newAppInstance('0x1234', tokenWrapperBase.address, '0x', false, { from: root })
-    tokenWrapper = await TokenWrapper.at(getNewProxyAddress(installReceipt))
+    tokenWrapper = await TokenWrapper.at(await installNewApp(dao, APP_ID, tokenWrapperBase.address, root))
   })
 
   it('is a forwarder', async () => {
@@ -84,7 +75,7 @@ contract('TokenWrapper', ([_, root, holder, someone]) => {
     context('account has no deposited tokens', () => {
       it('can mint tokens', async () => {
         const amount = bigExp(2, 18)
-        const initialBlockNumber = bn(await getBlockNumber())
+        const initialBlockNumber = bn(await latestBlock())
 
         await erc20.approve(tokenWrapper.address, amount, { from: holder })
         await tokenWrapper.deposit(amount, { from: holder })

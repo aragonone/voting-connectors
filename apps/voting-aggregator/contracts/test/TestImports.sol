@@ -4,7 +4,6 @@ import "@aragon/os/contracts/acl/ACL.sol";
 import "@aragon/os/contracts/kernel/Kernel.sol";
 import "@aragon/os/contracts/factory/EVMScriptRegistryFactory.sol";
 import "@aragon/os/contracts/factory/DAOFactory.sol";
-import "@aragon/apps-shared-migrations/contracts/Migrations.sol";
 
 
 // HACK to workaround truffle artifact loading on dependencies
